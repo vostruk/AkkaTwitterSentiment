@@ -1,19 +1,20 @@
-import scala.collection.JavaConverters._
 import scala.collection.mutable
-import java.io.StringReader
-import scala.math.log
-
-import edu.stanford.nlp.util.StringUtils
+import akka.actor._
 
 
-class DocumentPreprocessor(val ngramOrder: Int) {
-  def getTermsFromDocument(document: String): List[String] = {
-    val coreNlpPreprocessor = new edu.stanford.nlp.process.DocumentPreprocessor(new StringReader(document))
-    for {
-      sentence <- coreNlpPreprocessor.asScala.toList
-      words = sentence.asScala.map(_.word()).toList
-      ngram <- StringUtils.getNgrams(words.asJava, ngramOrder, ngramOrder).asScala
-    } yield ngram
+case class AddDocumentMessage(document: String)
+case class GetNGramProbablityMessage(ngram: String)
+case object GetDocumentsCount
+
+
+class CategoryModelActor(categoryModel: CategoryModel) extends Actor {
+  override def receive = {
+    case AddDocumentMessage(document) => categoryModel.addDocument(document)
+    case GetNGramProbablityMessage(ngram) =>
+      val ngramProbability = categoryModel.getNGramProbability(ngram)
+      sender ! ngramProbability
+    case GetDocumentsCount =>
+      sender ! categoryModel.documentsCount
   }
 }
 
@@ -36,7 +37,7 @@ class LaplaceSmoothingCategoryModel(
                                      documentPreprocessor: DocumentPreprocessor,
                                      var vocabulary: mutable.Set[String] = mutable.Set[String]()
                                    ) extends CategoryModel(documentPreprocessor=documentPreprocessor) {
-  override def getNGramProbability(ngram: String) = (ngramCounts(ngram) + pseudoCount) / (ngramsCount + vocabulary.size)
+  override def getNGramProbability(ngram: String): Double = (ngramCounts(ngram) + pseudoCount) / (ngramsCount + vocabulary.size)
 
   override def addDocument(document: String): Unit = {
     vocabulary ++= documentPreprocessor.getTermsFromDocument(document)
@@ -76,45 +77,5 @@ class GoodTuringSmoothingCategoryModel(
       countCounts(count).toDouble
     (count + 1) * countCounts(count + 1).toDouble / (ngramsCount * divisor)
   }
-
-
 }
 
-
-class NaiveBayesModel(documentPreprocessor: DocumentPreprocessor, categoryModelFactory: () => CategoryModel, languageModels: mutable.Map[String, CategoryModel] = mutable.Map[String, CategoryModel]()) {
-
-  def addDocument(document: String, category: String): Unit = {
-    if (!languageModels.contains(category)) {
-      languageModels(category) = categoryModelFactory()
-    }
-    languageModels(category).addDocument(document)
-  }
-
-  def classifyDocument(document: String) = {
-    val allNGrams = documentPreprocessor.getTermsFromDocument(document)
-    val documentsCount = languageModels.values.map(_.documentsCount).sum
-    val scoredCategories = for {
-      (category, languageModel) <- languageModels
-      loglikelihood = allNGrams.map(languageModel.getNGramProbability).map(log).sum + log(languageModel.documentsCount.toDouble / documentsCount)
-    } yield (category, loglikelihood)
-    scoredCategories.maxBy(_._2)._1
-  }
-}
-
-
-object Hi {
-
-  def main(args: Array[String]): Unit = {
-    val documentPreprocessor = new DocumentPreprocessor(1)
-    val naiveBayesModel = new NaiveBayesModel(documentPreprocessor, () => new GoodTuringSmoothingCategoryModel(6, documentPreprocessor))
-    val source = scala.io.Source.fromFile("newsgroups_dataset.txt")
-    val inputText = try source.mkString.toLowerCase finally source.close()
-    val lines = inputText.toLowerCase.split("\n").map(_.split("\t", 2))
-    val (train, test) = lines.partition(_ => util.Random.nextDouble() < 0.7)
-    for (line <- train) {
-      naiveBayesModel.addDocument(line(1), line(0))
-    }
-    val errors = test.map((line) => line(0) != naiveBayesModel.classifyDocument(line(1))).count(_ == true)
-    println(errors.toDouble / test.length)
-  }
-}
