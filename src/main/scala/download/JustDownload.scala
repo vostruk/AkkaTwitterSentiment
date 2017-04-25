@@ -19,44 +19,98 @@ import akka.actor.ActorRef
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
+import classify.CategoryMessage
+import classify.DocumentCategoryMessage
+import classify.ClassifyDocumentMessage
 
+import classify.DocumentPreprocessor
+import classify.CategoriesRepositoryActor
+import classify.LaplaceSmoothingCategoryModel
+import classify.NaiveBayesModelActor
+import classify.NaiveBayesModel
 //=============================================
-object JustDownload extends App{
- 
 
-def myparse(jsonString: String, filename: String) {
-
+class RequestParserActor(NbM:ActorRef) extends Actor {
+	
 	class CC[T] { def unapply(a:Any):Option[T] = Some(a.asInstanceOf[T]) }
-
 	object M extends CC[Map[String, Any]]
 	object L extends CC[List[Any]]
 	object S extends CC[String]
 	object D extends CC[Double]
 	object B extends CC[Boolean]
+
+    def receive = {
+		case jsonString:String => {
+			val bString =     jsonString.replaceAll("[\\t\\n\\r]+"," ");
+			val result = for {
+	  		  Some(M(map)) <- List(JSON.parseFull(bString))
+	  		  L(statuses) = map("statuses")
+	   		  M(tweet) <- statuses
+	   	 	  S(text) = tweet("text")
+	    	  S(created) = tweet("created_at")
+	    	  D(id) = tweet("id")
+			} yield {
+	    			(text, created, id)
+			}
+			implicit val timeout = Timeout(5 seconds)
+			println(result.size)
+
+			//CAN PRINT parsed Tweets to file
+			 	val st = result.map { tuple =>   tuple.productIterator.mkString("\t")}
+				new PrintWriter("textTweets.txt") { write(st mkString("\n")); close }
+
+			//!!!!!!!or can send for classification
+			//val TweetsCategoriesDates = result.map { tuple =>   (tuple._2, tuple._1, Await.result(NbM ? ClassifyDocumentMessage(tuple._1), timeout.duration).asInstanceOf[CategoryMessage])}
+
+			//val result2 = Await.result(categories, timeout.duration).asInstanceOf[List[CategoryMessage]]
+    		println("received categorized elements")
+			//println(TweetsCategoriesDates.size)
+		}
+		
+		case DocumentCategoryMessage(tw, em)  => {
+	    }
+   }
 	
-	val bString =     jsonString.replaceAll("[\\t\\n\\r]+"," ");
-
-	val result = for {
-	    Some(M(map)) <- List(JSON.parseFull(bString))
-	    L(statuses) = map("statuses")
-	    M(tweet) <- statuses
-	    S(text) = tweet("text")
-	    S(created) = tweet("created_at")
-	    D(id) = tweet("id")
-	} yield {
-	    (text, created, id)
-	}
- 
-	println(result.size)
-
-
-         val st = result.map { tuple =>   tuple.productIterator.mkString("\t")}
-	
-
-	new PrintWriter(filename) { write(st mkString("\n")); close }
-    //result
 }
+
+class SearchRangeActor (ConsumerKey:String, ConsumerSecret:String, AccessToken:String, AccessSecret:String, requestParser: ActorRef ) extends Actor {
+
+	val consumer = new CommonsHttpOAuthConsumer(ConsumerKey,ConsumerSecret);
+
+ def search(num:Int, query :String) {
+
+     if(num < 1){ return;}
+	  
+	 consumer.setTokenWithSecret(AccessToken, AccessSecret);
+	 val request = new HttpGet("https://api.twitter.com/1.1/search/tweets.json"+query );
+     consumer.sign(request);
+
+     val client = new DefaultHttpClient();
+     val response = client.execute(request);
+ 
+     println(response.getStatusLine().getStatusCode());
+     
+	val jsonRes = IOUtils.toString(response.getEntity().getContent())
+    new PrintWriter("JsonResult_"+num+".txt") { write(jsonRes); close }
+	//myparse(jsonRes, "onlyTweets_"+num+".txt");
+	
+	requestParser ! jsonRes
+
+    implicit val formats = DefaultFormats
+    val parsedJson = Json.parse(jsonRes.toString)
+    
+    val value1 = (parsedJson \ "search_metadata" \ "next_results")//.as[String]
+  
+   // println (value1.as[String])//.map(_.as[String]).lift(1))
+
+	 search(num-1, value1.as[String])
+  }
 
 def encodeFirstQuery(keywords:String,dateFrom:String, dateTo:String ):String = {
     var sinceStr = ""
@@ -72,55 +126,37 @@ def encodeFirstQuery(keywords:String,dateFrom:String, dateTo:String ):String = {
 	return query;
 }
 
-  def search(num:Int, query :String) {
+  def receive = {
+		case (q:String, f:String, t:String) => {  search(1, encodeFirstQuery(q , f, t))
+ 		}
+	}
 
-     if (num<1) return;
-	 
+} //searchActor end
 
- 	  val  ConsumerKey  =  "9DZO2bQPgmXO4r2eML5yVE7tb";
+
+object JustDownload extends App{
+ 	
+	  val  ConsumerKey  =  "9DZO2bQPgmXO4r2eML5yVE7tb";
 	  val  ConsumerSecret  = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW";
 	  val AccessToken = "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0";
 	  val AccessSecret = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x";
  
-	 val consumer = new CommonsHttpOAuthConsumer(ConsumerKey,ConsumerSecret);
-	 consumer.setTokenWithSecret(AccessToken, AccessSecret);
-     
-	 val request = new HttpGet("https://api.twitter.com/1.1/search/tweets.json"+query );
-     
-     consumer.sign(request);
 
-     val client = new DefaultHttpClient();
-     val response = client.execute(request);
+
+
  
-     println(response.getStatusLine().getStatusCode());
-     
-	val jsonRes = IOUtils.toString(response.getEntity().getContent())
-
-    new PrintWriter("JsonResult_"+num+".txt") { write(jsonRes); close }
-	myparse(jsonRes, "onlyTweets_"+num+".txt");
-
-    implicit val formats = DefaultFormats
-    val parsedJson = Json.parse(jsonRes.toString)
-    
-    val value1 = (parsedJson \ "search_metadata" \ "next_results")//.as[String]
-
-  
-    println (value1.as[String])//.map(_.as[String]).lift(1))
-
-
-	search(num-1, value1.as[String])
-
-  }
-
-
 //=============================================
 
 val actorEmojisyDefinition = "😀" :: "😯" :: "☹️" :: "😠" :: Nil
 
 val system = ActorSystem("DownloadSystem")
 
-//val TDownload = context.actorOf(Props(new TweetDownloadCommander(consumerToken, accessToken)), name = "DownloadActor")
-//val TProcessor = context.actorOf(Props[TweetProcessCommander], name = "ProActor")
+ val dp = new DocumentPreprocessor(2)
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.5, dp))))
+  val nbm1 = new NaiveBayesModel(dp, cr)
+  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(nbm1)), name = "dpa1")
+ val requestParserActor = system.actorOf(Props(new RequestParserActor(NbMActor)), name = "requestParserActor")
+ val searchDownloadActor = system.actorOf(Props(new SearchRangeActor(ConsumerKey, ConsumerSecret, AccessToken, AccessSecret, requestParserActor)), name = "DownloadActor")
 
  print("Query: ");
  //"#brexit"
@@ -134,8 +170,7 @@ val system = ActorSystem("DownloadSystem")
  print("To (ex. 2017-04-24): ");
  val t = scala.io.StdIn.readLine() //"2017-04-24"//
  
+ searchDownloadActor ! (q, f, t)
  
- 
- search(2, encodeFirstQuery(q , f, t))
 
 }
