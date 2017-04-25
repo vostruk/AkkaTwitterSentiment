@@ -1,3 +1,5 @@
+package classify
+
 import akka.actor._
 
 case object PingMessage
