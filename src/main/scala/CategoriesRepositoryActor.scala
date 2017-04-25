@@ -4,14 +4,18 @@ import scala.collection.mutable
 
 
 case class GetCategoryActor(category: String)
+case class GetAllCategoriesActors(categoriesActors: mutable.Map[String, ActorRef])
 
 
-class CategoriesRepositoryActor(categoryModelFactory: () => CategoryModel, categoryAgents: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()) extends Actor {
+class CategoriesRepositoryActor(categoryModelFactory: () => CategoryModel) extends Actor {
+
+  val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()
+
   override def receive = {
     case GetCategoryActor(category) =>
-      if (!categoryAgents.contains(category)) {
-        categoryAgents(category) = context.actorOf(Props(new CategoryModelActor(categoryModelFactory())))
+      if (!categoryActors.contains(category)) {
+        categoryActors(category) = context.actorOf(Props(new CategoryModelActor(categoryModelFactory())))
       }
-      sender ! categoryAgents(category)
+      sender ! categoryActors(category)
   }
 }

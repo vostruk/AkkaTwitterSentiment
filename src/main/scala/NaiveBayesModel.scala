@@ -10,10 +10,24 @@ import scala.concurrent.duration._
 
 case class DocumentCategoryMessage(document: String, category: String)
 case class ClassifyDocumentMessage(document: String)
-case class CategoryMessage(category: String)
+case class CategoryMessage(category: Option[String])
 
 
-class NaiveBayesModel(documentPreprocessor: DocumentPreprocessor, catgoriesRepositoryActor: ActorRef, categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()) {
+class NaiveBayesModelActor(documentPreprocessor: DocumentPreprocessor, catgoriesRepositoryActor: ActorRef) extends Actor {
+
+  val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()
+
+  override def receive = {
+    case DocumentCategoryMessage(document, category) => addDocument(document, category)
+    case ClassifyDocumentMessage(document) =>
+      if (categoryActors.isEmpty) {
+        sender ! CategoryMessage(None)
+      }
+      else {
+        val category = classifyDocument(document)
+        sender ! CategoryMessage(Some(category))
+      }
+  }
 
   def addDocument(document: String, category: String): Unit = {
     implicit val duration: Timeout = 20 seconds;
@@ -28,6 +42,7 @@ class NaiveBayesModel(documentPreprocessor: DocumentPreprocessor, catgoriesRepos
     implicit val duration: Timeout = 20 seconds;
     val allNGrams = documentPreprocessor.getTermsFromDocument(document)
     val documentsCount = categoryActors.mapValues((actor) => Await.result(actor ? GetDocumentsCount, 10 seconds).asInstanceOf[Int])
+    println(documentsCount)
     val allDocumentsCount = documentsCount.values.sum
     val ngramLikelihoods: List[(String, Double)] = for {
       (category, categoryActor) <- categoryActors.toList
@@ -39,12 +54,3 @@ class NaiveBayesModel(documentPreprocessor: DocumentPreprocessor, catgoriesRepos
   }
 }
 
-
-class NaiveBayesModelActor(naiveBayesModel: NaiveBayesModel) extends Actor {
-  override def receive = {
-    case DocumentCategoryMessage(document, category) => naiveBayesModel.addDocument(document, category)
-    case ClassifyDocumentMessage(document) =>
-      val category = naiveBayesModel.classifyDocument(document)
-      sender ! CategoryMessage(category)
-  }
-}
