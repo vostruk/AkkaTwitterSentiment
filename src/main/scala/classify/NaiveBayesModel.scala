@@ -1,3 +1,5 @@
+package classify
+
 import scala.collection.mutable
 import scala.math.log
 import akka.actor._

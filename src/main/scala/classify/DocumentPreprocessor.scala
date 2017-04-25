@@ -1,3 +1,5 @@
+package classify
+
 import java.io.StringReader
 import scala.collection.JavaConverters._
 
