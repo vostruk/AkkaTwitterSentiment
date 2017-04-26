@@ -20,6 +20,7 @@ class NaiveBayesModelActor(documentPreprocessor: DocumentPreprocessor, catgories
   val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()
 
   override def receive = {
+    case NewCategory(category, categoryActor) => categoryActors(category) = categoryActor
     case DocumentCategoryMessage(document, category) => addDocument(document, category)
     case ClassifyDocumentMessage(document) =>
       if (categoryActors.isEmpty) {
@@ -44,8 +45,7 @@ class NaiveBayesModelActor(documentPreprocessor: DocumentPreprocessor, catgories
     implicit val duration: Timeout = 20 seconds;
     val allNGrams = documentPreprocessor.getTermsFromDocument(document)
     val documentsCount = categoryActors.mapValues((actor) => Await.result(actor ? GetDocumentsCount, 10 seconds).asInstanceOf[Int])
-    println(documentsCount)
-    val allDocumentsCount = documentsCount.values.sum
+    val allDocumentsCount: Double = documentsCount.values.sum
     val ngramLikelihoods: List[(String, Double)] = for {
       (category, categoryActor) <- categoryActors.toList
       ngram <- allNGrams
@@ -55,4 +55,3 @@ class NaiveBayesModelActor(documentPreprocessor: DocumentPreprocessor, catgories
     scoredCategories.maxBy(_._2)._1
   }
 }
-

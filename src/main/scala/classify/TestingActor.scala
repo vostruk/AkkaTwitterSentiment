@@ -1,17 +1,20 @@
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
-import scala.concurrent._
-import ExecutionContext.Implicits.global
+package classify
+
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 
 case object EvaluateModel
 
 
-class TestingActor(testDataFileName: String, naiveBayesModel: ActorRef) extends Actor {
+class TestingActor(testDataFileName: String, categoriesRepositoryActor: ActorRef) extends Actor {
   implicit val duration: Timeout = 100 seconds;
+  var naiveBayesModelOption: Option[ActorRef] = None
 
   val (testLabels, testDocuments) = {
     val source = scala.io.Source.fromFile(testDataFileName)
@@ -22,6 +25,10 @@ class TestingActor(testDataFileName: String, naiveBayesModel: ActorRef) extends 
 
   override def receive = {
     case EvaluateModel =>
+      val naiveBayesModel = naiveBayesModelOption.getOrElse(
+        Await.result(categoriesRepositoryActor ? CreateNaiveBayesModelActor, 100 seconds).asInstanceOf[ActorRef]
+      )
+      naiveBayesModelOption = Some(naiveBayesModel)
       val decisionsFuture = testDocuments.map((doc) => naiveBayesModel ? ClassifyDocumentMessage(doc)).map(_.mapTo[CategoryMessage])
 
       val decisions = Await.result(Future.sequence(decisionsFuture.map(_.map(_.category))), 100 seconds)

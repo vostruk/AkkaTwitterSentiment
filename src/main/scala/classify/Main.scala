@@ -6,6 +6,7 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case object PingMessage
@@ -17,28 +18,40 @@ class Printer(testingActor: ActorRef) extends Actor {
     case PingMessage =>
       val accuracyFuture = testingActor ? EvaluateModel
       println(Await.result(accuracyFuture, 1000 seconds))
-      Thread.sleep(20000)
       self ! PingMessage
   }
 }
 
-object Main extends App {
+
+class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
   val source = scala.io.Source.fromFile("newsgroups_dataset.txt")
   val inputText = try source.mkString.toLowerCase finally source.close()
   val lines = inputText.toLowerCase.split("\n").map(_.split("\t", 2))
+  implicit val duration: Timeout = 100 seconds;
 
+  override def receive = {
+    case PingMessage =>
+      val nbActorFuture = (categoriesRepositoryActor ? CreateNaiveBayesModelActor).mapTo[ActorRef]
+      nbActorFuture.map {
+        nbActor =>
+          for (line <- lines) {
+            nbActor ! DocumentCategoryMessage(line(1), line(0))
+            Thread.sleep(100)
+          }
+          println("Learning Done!")
+      }
+  }
+}
+
+
+object Main extends App {
   val system = ActorSystem("SAGSystem")
   val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.1, dp))))
-  val a1 = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
-  val a2 = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa2")
-  val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", a2)))
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.05, dp))))
+  val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", cr)))
   val printer = system.actorOf(Props(new Printer(testingActor)))
+  val learner = system.actorOf(Props(new Learner(cr)))
 
   printer ! PingMessage
-
-  for (line <- lines) {
-    a1 ! DocumentCategoryMessage(line(1), line(0))
-    Thread.sleep(300)
-  }
+  learner ! PingMessage
 }

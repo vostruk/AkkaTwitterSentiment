@@ -33,7 +33,6 @@ import classify.DocumentPreprocessor
 import classify.CategoriesRepositoryActor
 import classify.LaplaceSmoothingCategoryModel
 import classify.NaiveBayesModelActor
-import classify.NaiveBayesModel
 //=============================================
 
 class RequestParserActor(NbM:ActorRef) extends Actor {
@@ -152,9 +151,8 @@ val actorEmojisyDefinition = "😀" :: "😯" :: "☹️" :: "😠" :: Nil
 val system = ActorSystem("DownloadSystem")
 
  val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.5, dp))))
-  val nbm1 = new NaiveBayesModel(dp, cr)
-  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(nbm1)), name = "dpa1")
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.5, dp))))
+  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
  val requestParserActor = system.actorOf(Props(new RequestParserActor(NbMActor)), name = "requestParserActor")
  val searchDownloadActor = system.actorOf(Props(new SearchRangeActor(ConsumerKey, ConsumerSecret, AccessToken, AccessSecret, requestParserActor)), name = "DownloadActor")
 
