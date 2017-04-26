@@ -21,9 +21,9 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.9",
   "oauth.signpost" % "signpost-core" % "1.2",
   "oauth.signpost" % "signpost-commonshttp4" % "1.2",
-"commons-io" % "commons-io" % "2.4", 
+  "commons-io" % "commons-io" % "2.4",
 	"commons-lang" % "commons-lang" % "2.6",
- "com.typesafe.play" %% "play-json" % "2.6.0-M1",
+  "com.typesafe.play" %% "play-json" % "2.6.0-M1",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
-"org.apache.httpcomponents" % "httpcore" % "4.4.4"
+  "org.apache.httpcomponents" % "httpcore" % "4.4.4"
 )
