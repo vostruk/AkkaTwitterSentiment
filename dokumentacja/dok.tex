@@ -1,8 +1,8 @@
-\documentclass{article}
+\documentclass[12pt]{article}
 
 \usepackage{polski}
 \usepackage[utf8]{inputenc}
-\usepackage{graphicx}
+\usepackage[a4paper,left=3.5cm,right=3.5cm,top=3.5cm,bottom=3.5cm]{geometry}
 
 \begin{document}
 
@@ -19,9 +19,24 @@
 \subsection{Źródło danych i model emocji}
 Jako źródło danych treningowych posłuży Twitter, z którego dane będą pobierane przez Streaming API. Emocje w ściągniętych tweetach zostaną oznaczone na podstawie zawartych w nich znakach \emph{emoji}. Przyjęty został model 6 podstawowych emocji podany przez Paula Ekmana: złość, obrzydzenie, strach, szczęście, smutek, zaskoczenie.
 
-Po wytrenowaniu modelu klasyfikacji użytkownik będzie mógł podać interesujący go hasztag oraz zakres dat (ograniczony do ostatnich 7 dni ze względu na możliwości API Twittera). W odpowiedzi program przedstawi użytkownikowi statystyki nt. emocji wyrażanych przez autorów tweetów w danym hasztagu w danym okresie.
+Po wytrenowaniu modelu klasyfikacji użytkownik będzie mógł podać interesujący go hasztag oraz zakres dat (ograniczony do ostatnich 7 dni ze względu na możliwości API Twittera). W odpowiedzi program przedstawi użytkownikowi statystyki i wykresy nt. emocji wyrażanych przez autorów tweetów w danym hasztagu w danym okresie.
 
 \subsection{Algorytm klasyfikacji sentymentu}
+Jako algorytm klasyfikacji zostanie wykorzystany naiwny klasyfikator bayesowski. Tekst wejściowy będzie dzielony na ngramy. Zaimplementowane zostaną dwie metody wygładzania prawdopodobieństw w modelu: wygładzanie Laplace'a (Lidstone'a) oraz wygładzanie Gooda-Turinga. Zakładmy, że uczenie modelu będzie online.
 
+\section{Technologie i typy aktorów}
+
+Projekt będzie wykonany w języku Scala z użyciem frameworka Akka. GUI aplikacji zostanie zrobione w ScalaFX, a do rysowania wykresów użyty zostanie pakiet Breeze
+
+Przewidziane są następujące typy aktorów:
+\begin{itemize}
+\item \emph{CategoryModelActor} -- będzie odpowiedzialny za przechowywanie danych nt. liczby wystąpień ngramów/dokumentów w danej kategorii, tj. emocji (dla każdej kategorii będzie działał oddzielny aktor). Inni aktorzy będą mu wysyłać kolejne tweety do analizy. Będzie również zwracał na żądanie innych aktorów wygładzone prawdopodobieństwa wystąpienia danego ngramu w przypisanej mu kategorii.
+\item \emph{NaiveBayesModelActor} -- będzie odpowiedzialny za przekazywanie tweetów do analizy odpowiednim \emph{CategoryModelActor} oraz za klasyfikację dokumentów na podstawie informacji udostępnianym mu przez wszystkich \emph{CategoryModelActor}. W celu skalowania aplikacji będzie mogło działać wiele instancji tego typu aktorów jednocześnie.
+\item \emph{CategoriesRepositoryActor} -- będzie odpowiedzialny za tworzenie nowych aktorów typu \emph{CategoryModelActor} jeżeli któryś z aktorów typu. \emph{NaiveBayesModelActor} dostanie do analizy dokument nie widzianej do tej pory kategorii. Będzie również odpowiedzialny za rozesłanie informacji o nowej kategorii.
+\item \emph{TestingActor} -- jego zadaniem będzie ciągłą ewaluacja modelu na podstawie danych testowych podanych przez użytkownika.
+\item \emph{OnlineTweetStreamer} -- będzie na bieżąco ściągał nowe tweety za pomocą Streaming API twittera i podawał je do analizy aktorowi \emph{NaiveBayesModelActor} w celu poprawienia jakości modelu (użytkownik będzie mógł wyłączyć ten typ uczenia). Użytkownik będzie mógł odpalić tyle instancji tego typu aktora ile dostarczy kluczy do API.
+\item \emph{FileDataStreamer} -- możliwa jest sytuacja, w której użytkownik będzie posiadać oetykietowane dane wysokiej jakości (lepsze niż tweety), których dodanie do modelu może polepszyć jakość klasyfikacji. Wtedy \emph{FileDataStreamer} będzie dane wczytywał dane z pliku wskazanego przez użytkownika oraz wysyłał je do \emph{NaiveBayesModelActor}. Uczenie modelu będzie odbywać się w takiej sytuacji z obu źródeł jednocześnie. Użytkownik może również stwierdzić, że interesuje go model wytrenowany tylko na podstawie dostarczonych przez niego danych. Dlatego będzie również istnieć opcja wyłączenia agentów typu \emph{OnlineTweetStreamer}.
+\item \emph{TweetDownloader} -- jego zadaniem będzie ściągnięcie tweetów wg. zadanych przez użytkownika parametrów (hashtag, zakres dat), wysyłanie ich do \item \emph{NaiveBayesModelActor} w celu ich sklasyfikowania oraz agregację wyników. Zebrane w ten sposób statystyki będą następnie wyświetlane użytkownikowi w GUI.
+\end{itemize}
 
 \end{document}
