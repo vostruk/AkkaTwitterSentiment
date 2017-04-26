@@ -21,7 +21,12 @@ class CategoryModelActor(categoryModel: CategoryModel) extends Actor {
 }
 
 
-abstract class CategoryModel(val ngramCounts: mutable.Map[String, Int] = mutable.Map().withDefaultValue(0), var documentsCount: Int = 0, var ngramsCount: Int = 0, documentPreprocessor: DocumentPreprocessor) {
+abstract class CategoryModel(documentPreprocessor: DocumentPreprocessor) {
+
+  val ngramCounts: mutable.Map[String, Int] = mutable.Map().withDefaultValue(0)
+  var documentsCount: Int = 0
+  var ngramsCount: Int = 0
+
   def addDocument(document: String): Unit = {
     for (ngram <- documentPreprocessor.getTermsFromDocument(document)) {
       ngramCounts(ngram) += 1
@@ -36,9 +41,11 @@ abstract class CategoryModel(val ngramCounts: mutable.Map[String, Int] = mutable
 
 class LaplaceSmoothingCategoryModel(
                                      val pseudoCount: Double,
-                                     documentPreprocessor: DocumentPreprocessor,
-                                     var vocabulary: mutable.Set[String] = mutable.Set[String]()
-                                   ) extends CategoryModel(documentPreprocessor=documentPreprocessor) {
+                                     documentPreprocessor: DocumentPreprocessor
+                                   ) extends CategoryModel(documentPreprocessor) {
+
+  var vocabulary: mutable.Set[String] = mutable.Set[String]()
+
   override def getNGramProbability(ngram: String): Double = (ngramCounts(ngram) + pseudoCount) / (ngramsCount + vocabulary.size)
 
   override def addDocument(document: String): Unit = {
@@ -50,11 +57,13 @@ class LaplaceSmoothingCategoryModel(
 
 class GoodTuringSmoothingCategoryModel(
                                         frequencyThreshold: Int,
-                                        documentPreprocessor: DocumentPreprocessor,
-                                        countCounts: mutable.Map[Int, Int] = mutable.Map().withDefaultValue(0),
-                                        unigramVocabulary: mutable.Set[String] = mutable.Set[String](),
-                                        var vocabulary: mutable.Set[String] = mutable.Set[String]()
-                                      ) extends CategoryModel(documentPreprocessor = documentPreprocessor) {
+                                        documentPreprocessor: DocumentPreprocessor
+                                      ) extends CategoryModel(documentPreprocessor) {
+
+  var vocabulary: mutable.Set[String] = mutable.Set[String]()
+  val unigramVocabulary: mutable.Set[String] = mutable.Set[String]()
+  val countCounts: mutable.Map[Int, Int] = mutable.Map().withDefaultValue(0)
+
   override def addDocument(document: String): Unit = {
     for (ngram <- documentPreprocessor.getTermsFromDocument(document)) {
       val oldCount = ngramCounts(ngram)

@@ -1,0 +1,27 @@
+\documentclass{article}
+
+\usepackage{polski}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+
+\begin{document}
+
+
+\title{Projekt SAG: analiza sentymentu w mediach społecznościowych}
+
+\author{Maciej Lotz, Volodymyr Ostruk, Łukasz Wacławski}
+
+\maketitle
+
+
+\section{Analiza sentymentu}
+
+\subsection{Źródło danych i model emocji}
+Jako źródło danych treningowych posłuży Twitter, z którego dane będą pobierane przez Streaming API. Emocje w ściągniętych tweetach zostaną oznaczone na podstawie zawartych w nich znakach \emph{emoji}. Przyjęty został model 6 podstawowych emocji podany przez Paula Ekmana: złość, obrzydzenie, strach, szczęście, smutek, zaskoczenie.
+
+Po wytrenowaniu modelu klasyfikacji użytkownik będzie mógł podać interesujący go hasztag oraz zakres dat (ograniczony do ostatnich 7 dni ze względu na możliwości API Twittera). W odpowiedzi program przedstawi użytkownikowi statystyki nt. emocji wyrażanych przez autorów tweetów w danym hasztagu w danym okresie.
+
+\subsection{Algorytm klasyfikacji sentymentu}
+
+
+\end{document}
