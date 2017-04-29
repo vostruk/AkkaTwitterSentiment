@@ -27,3 +27,9 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "org.apache.httpcomponents" % "httpcore" % "4.4.4"
 )
+
+libraryDependencies += "org.scalafx" %% "scalafx" % "8.0.102-R11"
+libraryDependencies += "org.scalanlp" %% "breeze" % "0.13.1"
+libraryDependencies += "org.scalanlp" %% "breeze-viz" % "0.13.1"
+resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
+scalacOptions += "-Xexperimental"
