@@ -273,6 +273,7 @@ object sentimentgui extends JFXApp {
 
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
+    resizable = false
     scene = new Scene {
       root = new VBox(10,
         new HBox(
