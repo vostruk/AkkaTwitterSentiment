@@ -14,6 +14,9 @@ import breeze.linalg._
 import breeze.plot._
 import scalafx.scene.control.DatePicker
 import java.time.LocalDate
+import scalafx.scene.control.Slider
+import scalafx.scene.control.ComboBox
+import javafx.collections.FXCollections
 import scala.util.Random
 
 object sentimentgui extends JFXApp {
@@ -21,7 +24,7 @@ object sentimentgui extends JFXApp {
   def refreshGui(): Unit = {
 
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
-    loadData(sampleInput)
+    loadData(genRandomData(getScopeFromInput()))
 
     f.clearPlot(0)
     p = f.subplot(0)
@@ -45,7 +48,7 @@ object sentimentgui extends JFXApp {
     }
 
     sentimentPieChart.data = ObservableBuffer(dataPairs.map { case (x, y) => PieChart.Data(x, y) })
-    p.xlabel = plotUnit + " back since " + getDateFromInput()
+    p.xlabel = getUnitFromInput() + " around " + getDateFromInput()
     p.ylabel = "Sentiment"
     p.legend = true
     f.refresh()
@@ -55,7 +58,7 @@ object sentimentgui extends JFXApp {
     //list of 6 lists of any length
     if (inputData.size != 6) {return}
     s = List()
-    for (i <- 1-(inputData(0).size) to 0){
+    for (i <- -(inputData(0).size)/2 to (inputData(0).size)/2){
       s = List.concat(s, List(i.toDouble))
     }
     days2 = DenseVector(s.toArray)
@@ -76,9 +79,15 @@ object sentimentgui extends JFXApp {
     return dateInput.getValue()
 
   }
-  def setPlotUnit (in: String) : Unit ={
-    plotUnit = in
+  def getUnitFromInput () : String ={
+    return dhComboBox.value.value.toString
+
   }
+  def getScopeFromInput () : Double ={
+    return sliderInput.value.value.toInt.toDouble
+  }
+
+
   //utility
   def sumArray(input:Array[Double]): Double = {
     var i=0
@@ -89,7 +98,33 @@ object sentimentgui extends JFXApp {
     }
     return sum
   }
-
+  def genRandomData(range: Double): List[List[Double]]= {
+    val randomGen = scala.util.Random
+    var s : List[Double] = List()
+    var sampleAngerList : List[Double] = List()
+    var sampleDisgustList : List[Double] = List()
+    var sampleFearList : List[Double] = List()
+    var sampleHappinesList : List[Double] = List()
+    var sampleSadnessList : List[Double] = List()
+    var sampleSurpriseList : List[Double] = List()
+    for (i <- -range.toInt to range.toInt){
+//      println(i)
+      s = List.concat(s, List(i.toDouble))
+      sampleAngerList = List.concat(sampleAngerList, List(randomGen.nextDouble()*5+30.0))
+      sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
+      sampleFearList = List.concat(sampleFearList, List(randomGen.nextDouble()*5+50.0))
+      sampleHappinesList = List.concat(sampleHappinesList, List(randomGen.nextDouble()*5+60.0))
+      sampleSadnessList = List.concat(sampleSadnessList, List(randomGen.nextDouble()*5+70.0))
+      sampleSurpriseList = List.concat(sampleSurpriseList, List(randomGen.nextDouble()*5+80.0))
+    }
+    val sampleInput = List(sampleAngerList,
+      sampleDisgustList,
+      sampleFearList,
+      sampleHappinesList,
+      sampleSadnessList,
+      sampleSurpriseList)
+    return sampleInput
+  }
 
   var plotUnit = "Days"
   val randomGen = scala.util.Random
@@ -102,7 +137,8 @@ object sentimentgui extends JFXApp {
   var sampleSurpriseList : List[Double] = List()
 
   //temp
-  for (i <- 1 to 17){
+  var range = 5.0
+  for (i <- -range.toInt to range.toInt){
     s = List.concat(s, List(i.toDouble))
     sampleAngerList = List.concat(sampleAngerList, List(randomGen.nextDouble()*5+30.0))
     sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
@@ -125,7 +161,6 @@ object sentimentgui extends JFXApp {
   var sampleHappines = DenseVector(sampleHappinesList.toArray)
   var sampleSadness = DenseVector(sampleSadnessList.toArray)
   var sampleSurprise = DenseVector(sampleSurpriseList.toArray)
-
   //cal.add(Calendar.DATE, 1)
   //println(cal.getTime())
   var dataPairs = Seq(("Anger", 1.0), ("Disgust", 17.0), ("Fear", 25.0), ("Happines", 27.0), ("Sadness", 5.0), ("Surprise", 5.0))
@@ -159,42 +194,81 @@ object sentimentgui extends JFXApp {
 
   val AngerCheckBox = new CheckBox {
     text = "Anger"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val DisgustCheckBox = new CheckBox {
     text = "Disgust"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val FearCheckBox = new CheckBox {
     text = "Fear"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val HappinesCheckBox = new CheckBox {
     text = "Happines"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val SadnessCheckBox = new CheckBox {
     text = "Sadness"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val SurpriseCheckBox = new CheckBox {
     text = "Surprise"
+    selected = true
     onAction = { ae =>
       refreshGui()
     }
   }
   val dateInput = new DatePicker(LocalDate.now()) {
 
+  }
+
+  val sliderInput = new Slider(1.0,24.0,1.0) {
+    onMouseReleased = { ae =>
+      scopeField.text = value.value.toInt.toString
+      //scopeField.text = dhComboBox.value.toString
+      //println(dhComboBox.value.value.toString)
+    }
+  }
+
+  val scopeField = new TextField{
+    disable = true
+    text = "1"
+    maxWidth = 40
+  }
+
+  val dhComboBox = new ComboBox[String](){
+
+      items = ObservableBuffer("days","hours")
+      value = "hours"
+    onAction = { ae =>
+      if (value.value.toString == "days"){
+        sliderInput.value = 1.0
+        sliderInput.max = 3.0
+        scopeField.text = "1"
+      }
+      if (value.value.toString == "hours"){
+        sliderInput.value = 1.0
+        sliderInput.max = 24.0
+        scopeField.text = "1"
+      }
+
+    }
   }
 
   stage = new JFXApp.PrimaryStage {
@@ -219,6 +293,12 @@ object sentimentgui extends JFXApp {
             hashtagConfirm,
             dateInput
           )
+        ),
+        new HBox(20,
+          new Text("Scope :"),
+          sliderInput,
+          scopeField,
+          dhComboBox
         )
       )
     }
