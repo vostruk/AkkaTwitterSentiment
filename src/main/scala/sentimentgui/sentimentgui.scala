@@ -12,18 +12,16 @@ import scalafx.scene.control.CheckBox
 import scalafx.scene.text.Text
 import breeze.linalg._
 import breeze.plot._
-import java.util.Calendar
+import scalafx.scene.control.DatePicker
+import java.time.LocalDate
 import scala.util.Random
 
 object sentimentgui extends JFXApp {
 
   def refreshGui(): Unit = {
 
-    // temp
-    dataPairs = Seq(("Anger", 25), ("Disgust", 17), ("Fear", 25), ("Happines", 27), ("Sadness", 5), ("Surprise", 5))
-    //temp
-
-    sentimentPieChart.title = "Sentiment pie chart for #" + hashtagInput.getText() + ""
+    sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
+    loadData(sampleInput)
 
     f.clearPlot(0)
     p = f.subplot(0)
@@ -47,20 +45,54 @@ object sentimentgui extends JFXApp {
     }
 
     sentimentPieChart.data = ObservableBuffer(dataPairs.map { case (x, y) => PieChart.Data(x, y) })
-    p.xlabel = "Days"
+    p.xlabel = plotUnit + " back since " + getDateFromInput()
     p.ylabel = "Sentiment"
     p.legend = true
     f.refresh()
   }
 
+  def loadData (inputData: List[List[Double]]) : Unit = {
+    //list of 6 lists of any length
+    if (inputData.size != 6) {return}
+    s = List()
+    for (i <- 1-(inputData(0).size) to 0){
+      s = List.concat(s, List(i.toDouble))
+    }
+    days2 = DenseVector(s.toArray)
+    //println(days2)
+    sampleAnger = DenseVector(inputData(0).toArray)
+    //println(sampleAnger)
+    sampleDisgust = DenseVector(inputData(1).toArray)
+    sampleFear = DenseVector(inputData(2).toArray)
+    sampleHappines = DenseVector(inputData(3).toArray)
+    sampleSadness = DenseVector(inputData(4).toArray)
+    sampleSurprise = DenseVector(inputData(5).toArray)
+    dataPairs = Seq(("Anger",sumArray(inputData(0).toArray)), ("Disgust", sumArray(inputData(1).toArray)), ("Fear", sumArray(inputData(2).toArray)), ("Happines", sumArray(inputData(3).toArray)), ("Sadness", sumArray(inputData(4).toArray)), ("Surprise", sumArray(inputData(5).toArray)))
+  }
+  def getHashtagFromInput () : String ={
+    return hashtagInput.getText()
+  }
+  def getDateFromInput () : LocalDate ={
+    return dateInput.getValue()
+
+  }
+  def setPlotUnit (in: String) : Unit ={
+    plotUnit = in
+  }
+  //utility
+  def sumArray(input:Array[Double]): Double = {
+    var i=0
+    var sum = 0.0
+    while (i < input.length) {
+      sum += input(i)
+      i += 1
+    }
+    return sum
+  }
 
 
-  //temp
-  var days = DenseVector(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0)
-  val cal = Calendar.getInstance()
-
+  var plotUnit = "Days"
   val randomGen = scala.util.Random
-
   var s : List[Double] = List()
   var sampleAngerList : List[Double] = List()
   var sampleDisgustList : List[Double] = List()
@@ -69,6 +101,7 @@ object sentimentgui extends JFXApp {
   var sampleSadnessList : List[Double] = List()
   var sampleSurpriseList : List[Double] = List()
 
+  //temp
   for (i <- 1 to 17){
     s = List.concat(s, List(i.toDouble))
     sampleAngerList = List.concat(sampleAngerList, List(randomGen.nextDouble()*5+30.0))
@@ -78,9 +111,12 @@ object sentimentgui extends JFXApp {
     sampleSadnessList = List.concat(sampleSadnessList, List(randomGen.nextDouble()*5+70.0))
     sampleSurpriseList = List.concat(sampleSurpriseList, List(randomGen.nextDouble()*5+80.0))
   }
-
-
-
+  var sampleInput = List(sampleAngerList,
+    sampleDisgustList,
+    sampleFearList,
+    sampleHappinesList,
+    sampleSadnessList,
+    sampleSurpriseList)
 
   var days2 = DenseVector(s.toArray)
   var sampleAnger = DenseVector(sampleAngerList.toArray)
@@ -90,13 +126,9 @@ object sentimentgui extends JFXApp {
   var sampleSadness = DenseVector(sampleSadnessList.toArray)
   var sampleSurprise = DenseVector(sampleSurpriseList.toArray)
 
-
-  val exSent2 = DenseVector(22.3,50.3,66.3)
-  val exSent = DenseVector(75.31, 74.72, 74.47, 76.21, 76.4, 75.69, 76.22, 76.54, 76.39, 75.18, 74.82, 74.43, 74.14, 72.32, 71.73, 72.9, 73.36)
-
   //cal.add(Calendar.DATE, 1)
   //println(cal.getTime())
-  var dataPairs = Seq(("Anger", 1), ("Disgust", 17), ("Fear", 25), ("Happines", 27), ("Sadness", 5), ("Surprise", 5))
+  var dataPairs = Seq(("Anger", 1.0), ("Disgust", 17.0), ("Fear", 25.0), ("Happines", 27.0), ("Sadness", 5.0), ("Surprise", 5.0))
   //temp
 
 
@@ -115,7 +147,9 @@ object sentimentgui extends JFXApp {
     }
   }
 
-  val hashtagInput = new TextField()
+  val hashtagInput = new TextField{
+    text = "Hashtag"
+  }
 
   val sentimentPieChart = new PieChart {
     title = "Pie chart example"
@@ -159,6 +193,9 @@ object sentimentgui extends JFXApp {
       refreshGui()
     }
   }
+  val dateInput = new DatePicker(LocalDate.now()) {
+
+  }
 
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
@@ -179,7 +216,8 @@ object sentimentgui extends JFXApp {
           new HBox(20,
             new Text("Hashtag :"),
             hashtagInput,
-            hashtagConfirm
+            hashtagConfirm,
+            dateInput
           )
         )
       )
