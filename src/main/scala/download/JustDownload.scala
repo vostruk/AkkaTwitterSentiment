@@ -3,6 +3,7 @@ package download
 
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.util.Timeout
 
 import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
@@ -11,7 +12,7 @@ import classify.DocumentPreprocessor
 import classify.CategoriesRepositoryActor
 import classify.LaplaceSmoothingCategoryModel
 import classify.NaiveBayesModelActor
-
+import akka.pattern.ask
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -35,9 +36,8 @@ object JustDownload extends App {
   val system = ActorSystem("DownloadSystem")
 
   val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.5, dp))))
-  val nbm1 = new NaiveBayesModel(dp, cr)
-  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(nbm1)), name = "dpa1")
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.5, dp))))
+  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
 
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
 
@@ -60,8 +60,8 @@ object JustDownload extends App {
   val t = "2017-04-24"//scala.io.StdIn.readLine() //
 
   //tez odrazu wysyla message do parsera a parser do kategorizera (NBM)
-  val timeoutFuture = Future( Await.result( Future(TweetDatesRangeDownloaderActor ! (q, f, t) ), 5.seconds))
-
+  val timeoutFuture = Future( Await.result( Future(TweetDatesRangeDownloaderActor ? (q, f, t) ), 50.seconds))
+  implicit val duration: Timeout = 100 seconds;
   timeoutFuture.onComplete {
     case Success(t)  => print("we're good!!"); requestParserActor ! "ShowStatistics"
     case Failure(e) => println("@@!!timeout " + e.getMessage)
