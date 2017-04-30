@@ -83,7 +83,7 @@ class GoodTuringSmoothingCategoryModel(
       return count
     }
     val divisor = if (count == 0)
-      10 + math.pow(unigramVocabulary.size, documentPreprocessor.ngramOrder) - vocabulary.size
+      1 + math.pow(unigramVocabulary.size, documentPreprocessor.ngramOrder) - vocabulary.size
     else
       countCounts(count).toDouble
     (count + 1) * countCounts(count + 1).toDouble / (ngramsCount * divisor)
