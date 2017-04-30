@@ -8,10 +8,7 @@ import akka.util.Timeout
 import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 import scala.language.postfixOps
-import classify.DocumentPreprocessor
-import classify.CategoriesRepositoryActor
-import classify.LaplaceSmoothingCategoryModel
-import classify.NaiveBayesModelActor
+import classify._
 import akka.pattern.ask
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import scala.concurrent.duration._
@@ -31,8 +28,7 @@ object JustDownload extends App {
 
   //=============================================
 
-  val actorEmojiDefinition = "😀" :: "😯" :: "☹️" :: "😠" :: Nil
-
+  val actorEmojiDefinition = Map("😀" -> "happiness", "😯" -> "surprise","☹️" -> "sadness" , "😠" -> "anger")
   val system = ActorSystem("DownloadSystem")
 
   val dp = new DocumentPreprocessor(2)
@@ -44,9 +40,7 @@ object JustDownload extends App {
   streamActor ! actorEmojiDefinition
   streamActor ! ("start", 20)
 
-
-  val requestParserActor = system.actorOf(Props(new RequestParserActor(NbMActor)), name = "requestParserActor")
-  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, requestParserActor)), name = "DownloadActor")
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
 
   //print("Query: ");
   val q = "#brexit"// scala.io.StdIn.readLine()
@@ -60,10 +54,12 @@ object JustDownload extends App {
   val t = "2017-04-24"//scala.io.StdIn.readLine() //
 
   //tez odrazu wysyla message do parsera a parser do kategorizera (NBM)
-  val timeoutFuture = Future( Await.result( Future(TweetDatesRangeDownloaderActor ? (q, f, t) ), 50.seconds))
-  implicit val duration: Timeout = 100 seconds;
-  timeoutFuture.onComplete {
-    case Success(t)  => print("we're good!!"); requestParserActor ! "ShowStatistics"
-    case Failure(e) => println("@@!!timeout " + e.getMessage)
-  }
+  //val timeoutFuture = Future( Await.result( Future(TweetDatesRangeDownloaderActor ? (q, f, t) ), 500.seconds))
+  //implicit val duration: Timeout = 500 seconds;
+  //timeoutFuture.onComplete {
+  //  case Success(t)  => print("we're good!!");
+  //  case Failure(e) => println("@@!!timeout " + e.getMessage)
+  //}
+  //val ans = NbMActor ! ClassifyDocumentMessage("It's awesome day today!!")
+  //println(ans)
 }

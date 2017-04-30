@@ -1,5 +1,14 @@
 package sentimentgui
 
+import akka.actor.{Props, ActorSystem}
+import akka.util.Timeout
+import classify._
+import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
+import download.{TweetDatesRangeDownloader,  OnlineTweetStreamer}
+
+import scala.collection.immutable
+import scala.collection.mutable.Map
+import scala.concurrent.Await
 import scalafx.application.JFXApp
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Scene
@@ -18,13 +27,69 @@ import scalafx.scene.control.Slider
 import scalafx.scene.control.ComboBox
 import javafx.collections.FXCollections
 import scala.util.Random
+import akka.pattern.ask
+import scala.concurrent.duration._
+import akka.util._
 
 object sentimentgui extends JFXApp {
+
+  //================================ACTORS here =======================
+
+  val CKey = "9DZO2bQPgmXO4r2eML5yVE7tb";
+  val CSecret = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW";
+  val AToken = "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0";
+  val ASecret = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x";
+
+  val consumerToken = ConsumerToken( CKey, CSecret)
+  val accessToken = AccessToken(AToken, ASecret)
+
+  //=============================================
+
+  val actorEmojiDefinition = immutable.Map("😀" -> "happiness", "😯" -> "surprise", "☹️" -> "sadness", "😠" -> "anger", "\uD83D\uDE12" -> "disgust", "\uD83D\uDE31" -> "fear")
+
+  val system = ActorSystem("DownloadSystem")
+
+  val dp = new DocumentPreprocessor(2)
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.5, dp))))
+  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
+
+  val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
+
+  streamActor ! actorEmojiDefinition
+
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
+  var ActorTweetsDataReceved: List[List[Double]] = Nil
+
+  def getclassifiedDataFromActor() = {
+
+    implicit val duration: Timeout = 500 seconds
+
+    //"2017-03-31"
+    val scp = getScopeFromInput()
+    val dfr = getDateFromInput().minusDays(scp.toLong)
+    val dto = getDateFromInput().plusDays(scp.toLong)
+
+    val fr = dfr.getYear().toString()+"-"+dfr.getMonthValue().toString()+"-"+dfr.getDayOfMonth().toString()//"2017-04-20"
+    ActorTweetsDataReceved = Nil
+
+    val t =  dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()//"2017-04-24"
+
+    val ans = Await.result(TweetDatesRangeDownloaderActor ? (getHashtagFromInput(), fr, t), 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
+    //println(ans)
+    //implicit def intlist2dlist(il: List[Int]): List[Double] = il.map(_.toDouble)
+    for ((k, v) <- ans)
+    {
+      val (keys, vals) = v.toSeq.sortBy(_._1).unzip
+      ActorTweetsDataReceved :+ (vals map (_.toDouble) )
+      println(k)
+      println(vals.size)
+    }
+  }
 
   def refreshGui(): Unit = {
 
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
-    loadData(genRandomData(getScopeFromInput()))
+    loadData(ActorTweetsDataReceved)//genRandomData(getScopeFromInput()))
 
     f.clearPlot(0)
     p = f.subplot(0)
@@ -174,11 +239,20 @@ object sentimentgui extends JFXApp {
   p.xlabel = "Days"
   p.ylabel = "Sentiment"
 
+ //!!@@
+
   val hashtagConfirm = new Button {
     text = "Ok"
     onAction = { ae =>
+      getclassifiedDataFromActor()
       refreshGui()
+    }
+  }
 
+  val loadDataConfirm = new Button {
+    text = "TrainOnline"
+    onAction = { ae =>
+      streamActor ! ("start", 200)
     }
   }
 
@@ -273,7 +347,7 @@ object sentimentgui extends JFXApp {
 
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
-    resizable = false
+    resizable = true
     scene = new Scene {
       root = new VBox(10,
         new HBox(
@@ -290,8 +364,10 @@ object sentimentgui extends JFXApp {
         new HBox(
           new HBox(20,
             new Text("Hashtag :"),
+            loadDataConfirm,
             hashtagInput,
             hashtagConfirm,
+
             dateInput
           )
         ),
@@ -304,4 +380,7 @@ object sentimentgui extends JFXApp {
       )
     }
   }
+
+
+
 }

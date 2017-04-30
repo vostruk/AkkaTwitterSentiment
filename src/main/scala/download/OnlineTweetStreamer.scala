@@ -12,6 +12,7 @@ import akka.actor.Actor
 
 import collection.mutable.Map
 import scala.collection.mutable
+import scala.collection.immutable
 
 
 class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken, receiver: ActorRef) extends Actor {
@@ -19,6 +20,7 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
   val client = TwitterStreamingClient(consumerToken, accessToken)
   var countReceived = 0
   var emotions: List[String] = "😠" :: Nil
+  var emoMap : immutable.Map[String, String] = null
 
   def filterEmoji(t : String): String = {
     var emoCheck : mutable.Map[String, Int] = mutable.Map(emotions map { s => (s, 0)} : _*)
@@ -37,9 +39,10 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
   def sendTweetText: PartialFunction[StreamingMessage, Unit] = {
     case tweet: Tweet => {
       val emoji = filterEmoji(tweet.text)
-      if (countReceived > 0 && emoji!="None" && emoji != "Many")
-        receiver ! DocumentCategoryMessage(tweet.text, emoji);
-      else context.stop(self);
+      if (countReceived > 0) {
+       if(emoji!="None" && emoji != "Many")
+        receiver ! DocumentCategoryMessage(tweet.text, emoMap(emoji))
+      }else context.stop(self);
       countReceived = countReceived - 1
     }
     case warning: WarningMessage => println("koniec bo blad " + warning.toString)
@@ -51,8 +54,9 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       client.filterStatuses(tracks = emotions, languages = List(Language.English))(sendTweetText)
     }
 
-    case emoList : List[String] => {
-      emotions = emoList
+    case emoList : immutable.Map[String, String] => {
+      emotions = emoList.keys.toList
+      emoMap = emoList
       println("New emoji list set for streamer")
     }
   }
