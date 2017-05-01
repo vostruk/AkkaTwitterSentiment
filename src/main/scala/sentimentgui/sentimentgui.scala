@@ -219,6 +219,10 @@ object sentimentgui extends JFXApp {
     }
 //    return ngramInput.getText()
   }
+  def setQualityField (in: String) : Unit ={
+    clasifierQualityField.text = in
+  }
+
 
   //utility
   def sumArray(input:Array[Double]): Double = {
@@ -475,7 +479,7 @@ object sentimentgui extends JFXApp {
   val holdTrainingConfirm = new Button {
     text = "Hold"
     onAction = { ae =>
- 
+
     }
   }
 
