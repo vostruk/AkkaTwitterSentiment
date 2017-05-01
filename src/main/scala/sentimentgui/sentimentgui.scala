@@ -31,6 +31,16 @@ import akka.pattern.ask
 import scala.concurrent.duration._
 import akka.util._
 
+import scalafx.Includes._
+import scalafx.application.JFXApp
+import scalafx.scene.control.{Button, CheckBox, Label, TextField}
+import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.text.Text
+import scalafx.scene.{Group, Scene}
+
+import javafx.stage.FileChooser
+import javafx.stage.FileChooser.ExtensionFilter
+
 object sentimentgui extends JFXApp {
 
   //================================ACTORS here =======================
@@ -346,6 +356,18 @@ object sentimentgui extends JFXApp {
     }
   }
 
+  val inputFileChooser = new FileChooser()
+  inputFileChooser.setTitle("Learn from a file")
+  inputFileChooser.extensionFilters ++= Seq(
+    new ExtensionFilter("Text Files", "*.txt"))
+
+  val fileConfirm = new Button {
+    text = "Learn from File"
+    onAction = { ae =>
+      var file = inputFileChooser.showOpenDialog(stage)
+    }
+  }
+
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
     resizable = true
@@ -377,8 +399,19 @@ object sentimentgui extends JFXApp {
           sliderInput,
           scopeField,
           dhComboBox
+        ),
+        new HBox(20,
+          new Text("File input:"),
+          fileConfirm
+
         )
       )
+    }
+    onCloseRequest = handle {
+      println("app is closing")
+      //there is no Figure.close() !!!
+      //f.close()
+      System.exit(0)
     }
   }
 
