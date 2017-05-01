@@ -102,7 +102,12 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
     val sf = new SimpleDateFormat(TWITTER);
 
-    for ((d, t, c) <- dtc) {
+    //for ((d, t, c) <- dtc)
+    dtc.foreach(tuple => {
+      val d = tuple._1
+      val t = tuple._2
+      val c = tuple._3
+
       val date = sf.parse(d.toString())
       val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
       println(dayMonth)
@@ -119,7 +124,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
       }
       else println("Ccategory is null wtf??")
 
-    }
+    })
 
     sender ! DateToStat
 
