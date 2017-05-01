@@ -17,19 +17,32 @@ import scala.collection.immutable
 
 class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken, receiver: ActorRef) extends Actor {
 
+  val GlobalEmojiMap = immutable.Map("happiness" -> List("😀"),  "surprise" -> List("😯"), "sadness"  -> List("☹️"),  "anger" ->  List("😠"), "disgust" -> List("\uD83D\uDE12") ,  "fear"  -> List("\uD83D\uDE31"))
+
+  var AgentEmotionsList : List[String] = "happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil
+
   val client = TwitterStreamingClient(consumerToken, accessToken)
   var countReceived = 0
-  var emotions: List[String] = "😠" :: Nil
-  var emoMap : immutable.Map[String, String] = null
+
+  var emojiListToStream: List[String] = Nil
+
 
   def filterEmoji(t : String): String = {
-    var emoCheck : mutable.Map[String, Int] = mutable.Map(emotions map { s => (s, 0)} : _*)
-    //Since our actor retrieves every emotion from the list, we need to classify them
+    val globalemojiList : List[String] = GlobalEmojiMap.values.flatten.toList
+    val emoCheck : mutable.Map[String, Int] = mutable.Map(globalemojiList map { s => (s, 0)} : _*)
+    globalemojiList.foreach(elem => if(t.contains(elem)) emoCheck(elem) = emoCheck(elem)+1)
 
-    emotions.foreach(elem => if(t.contains(elem)) emoCheck(elem)=emoCheck(elem)+1)
     var rv = "Many"
-    emoCheck.values.count(_ >0) match {
-      case 1 => for((e, c) <- emoCheck) {if(c==1) rv = e }
+    val foundEmoji:List[String] = emoCheck.filter(t => t._2>0).keys.toList
+
+    var reverseHelper =  mutable.Map[String, String]()
+    GlobalEmojiMap.foreach(el => el._2.foreach(listel => reverseHelper(listel) = el._1))
+    var foundEmotions = mutable.Map(GlobalEmojiMap.keys.toList map { s => (s, 0)} : _*)
+
+    foundEmoji.foreach(elem => { foundEmotions(reverseHelper(elem)) = foundEmotions(reverseHelper(elem)) + 1 })
+
+    foundEmotions.values.count(_>0) match {
+      case 1 => for((e, c) <- foundEmotions) {if(c>0) rv = e }
       case 0 => rv = "None"
       case _ => rv = "Many"
     }
@@ -41,7 +54,7 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       val emoji = filterEmoji(tweet.text)
       if (countReceived > 0) {
        if(emoji!="None" && emoji != "Many")
-        receiver ! DocumentCategoryMessage(tweet.text, emoMap(emoji))
+        receiver ! DocumentCategoryMessage(tweet.text, emoji)
       }else context.stop(self);
       countReceived = countReceived - 1
     }
@@ -51,13 +64,19 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
   def receive = {
     case ("start", num: Int) => {
       countReceived = num
-      client.filterStatuses(tracks = emotions, languages = List(Language.English))(sendTweetText)
+      client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText)
     }
 
-    case emoList : immutable.Map[String, String] => {
-      emotions = emoList.keys.toList
-      emoMap = emoList
-      println("New emoji list set for streamer")
+    case emoList : List[String] => {
+      AgentEmotionsList = emoList
+      emoList.foreach(
+        emo => {
+          if(GlobalEmojiMap.contains(emo)) {
+            emojiListToStream = emojiListToStream ::: GlobalEmojiMap(emo)
+            AgentEmotionsList :+ emo
+          }
+        }
+      )
     }
   }
 

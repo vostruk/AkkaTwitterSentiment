@@ -45,7 +45,7 @@ object sentimentgui extends JFXApp {
 
   //=============================================
 
-  val actorEmojiDefinition = immutable.Map("😀" -> "happiness", "😯" -> "surprise", "☹️" -> "sadness", "😠" -> "anger", "\uD83D\uDE12" -> "disgust", "\uD83D\uDE31" -> "fear")
+  var AgentEmotionsList : List[String] = "happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil
 
   val system = ActorSystem("DownloadSystem")
 
@@ -55,7 +55,7 @@ object sentimentgui extends JFXApp {
 
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
 
-  streamActor ! actorEmojiDefinition
+  streamActor ! AgentEmotionsList
 
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
