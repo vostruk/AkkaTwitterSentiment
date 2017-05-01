@@ -38,6 +38,9 @@ import scalafx.scene.layout.{HBox, VBox}
 import scalafx.scene.text.Text
 import scalafx.scene.{Group, Scene}
 
+import javafx.stage.FileChooser
+import javafx.stage.FileChooser.ExtensionFilter
+
 object sentimentgui extends JFXApp {
 
   //================================ACTORS here =======================
@@ -353,6 +356,18 @@ object sentimentgui extends JFXApp {
     }
   }
 
+  val inputFileChooser = new FileChooser()
+  inputFileChooser.setTitle("Learn from a file")
+  inputFileChooser.extensionFilters ++= Seq(
+    new ExtensionFilter("Text Files", "*.txt"))
+
+  val fileConfirm = new Button {
+    text = "Learn from File"
+    onAction = { ae =>
+      var file = inputFileChooser.showOpenDialog(stage)
+    }
+  }
+
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
     resizable = true
@@ -384,6 +399,11 @@ object sentimentgui extends JFXApp {
           sliderInput,
           scopeField,
           dhComboBox
+        ),
+        new HBox(20,
+          new Text("File input:"),
+          fileConfirm
+
         )
       )
     }
