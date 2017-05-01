@@ -475,9 +475,7 @@ object sentimentgui extends JFXApp {
   val holdTrainingConfirm = new Button {
     text = "Hold"
     onAction = { ae =>
-      println(getPseudocountFromInput())
-      println(getFrequencyThresholdFromInput())
-      println(getNgramInput())
+ 
     }
   }
 
