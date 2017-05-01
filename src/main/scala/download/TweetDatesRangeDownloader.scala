@@ -3,6 +3,7 @@ package download
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 import akka.pattern.ask
 
@@ -100,13 +101,14 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     }
 
     val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
-    val sf = new SimpleDateFormat(TWITTER);
+    val sf = new SimpleDateFormat(TWITTER, Locale.US);
 
     //for ((d, t, c) <- dtc)
     dtc.foreach(tuple => {
       val d = tuple._1
       val t = tuple._2
       val c = tuple._3
+
 
       val date = sf.parse(d.toString())
       val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
