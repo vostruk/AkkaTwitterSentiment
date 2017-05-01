@@ -15,7 +15,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
         .getLines
         .foreach { line =>
           val r = line.split("\\t")
-          naiveBayesActor ! DocumentCategoryMessage(r(2), r(1))
+          naiveBayesActor ! DocumentCategoryMessage(r(1), r(0))
         }
     }
   }
