@@ -40,6 +40,7 @@ import scalafx.scene.{Group, Scene}
 
 import javafx.stage.FileChooser
 import javafx.stage.FileChooser.ExtensionFilter
+import javafx.scene.control.TitledPane
 
 object sentimentgui extends JFXApp {
 
@@ -160,6 +161,19 @@ object sentimentgui extends JFXApp {
   }
   def getScopeFromInput () : Double ={
     return sliderInput.value.value.toInt.toDouble
+  }
+
+  def getCKeyFromInput () : String ={
+    return CKeyInput.getText()
+  }
+  def getCSecretFromInput () : String ={
+    return CSecretInput.getText()
+  }
+  def getATokenFromInput () : String ={
+    return ATokenInput.getText()
+  }
+  def getASecretFromInput () : String ={
+    return ASecretInput.getText()
   }
 
 
@@ -362,15 +376,115 @@ object sentimentgui extends JFXApp {
     new ExtensionFilter("Text Files", "*.txt"))
 
   val fileConfirm = new Button {
-    text = "Learn from File"
+    text = "File"
     onAction = { ae =>
       var file = inputFileChooser.showOpenDialog(stage)
     }
   }
+  val CKeyInput = new TextField{
+    text = "9DZO2bQPgmXO4r2eML5yVE7tb"
+    minWidth = 400
+  }
+  val CSecretInput = new TextField{
+    text = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW"
+    minWidth = 400
+  }
+  val ATokenInput = new TextField{
+    text = "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0"
+    minWidth = 400
+  }
+  val ASecretInput = new TextField{
+    text = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x"
+    minWidth = 400
+  }
+  val keyTitledPane = new TitledPane("API keys",
+    new VBox(0,
+      new HBox(10,
+        new Text("    CKey :"),
+        CKeyInput
+      ),
+      new HBox(10,
+        new Text("CSecret :"),
+        CSecretInput
+      ),
+      new HBox(10,
+        new Text("AToken :"),
+        ATokenInput
+      ),
+      new HBox(10,
+        new Text("ASecret :"),
+        ASecretInput
+      )
+    )
+  )
+  keyTitledPane.expanded = false
+
+  val resetModelConfirm = new Button {
+    text = "Reset"
+    onAction = { ae =>
+
+    }
+  }
+
+  val holdTrainingConfirm = new Button {
+    text = "Hold"
+    onAction = { ae =>
+
+    }
+  }
+
+  val pseudocountInput = new TextField{
+    text = "2"
+    maxWidth = 30
+  }
+  val frequencyThresholdInput = new TextField{
+    text = "2"
+    maxWidth = 30
+  }
+  val ngramInput = new TextField{
+    text = "2"
+    maxWidth = 30
+  }
+
+  val smoothingSelectionComboBox = new ComboBox[String]() {
+    items = ObservableBuffer("Laplace", "Good-Turing")
+    value = "Laplace"
+    //    disable = true
+    onAction = { ae =>
+      if (value.value.toString == "Laplace"){
+
+      }
+      if (value.value.toString == "Good-Turing"){
+
+      }
+
+    }
+  }
+
+  val advancedClasifierOptionsTitledPane = new TitledPane("Advanced clasifier options",
+    new HBox(5,
+      new Text("Smoothing:"),
+      smoothingSelectionComboBox,
+      new Text("pseudocount:"),
+      pseudocountInput,
+      new Text("freq. threshold:"),
+      frequencyThresholdInput,
+      new Text("n-grams:"),
+      ngramInput
+    )
+  )
+  advancedClasifierOptionsTitledPane.expanded = false
+
+  val clasifierQualityField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 30
+  }
+
 
   stage = new JFXApp.PrimaryStage {
     title = "Twitter Sentiment Analyzer"
-    resizable = true
+    resizable = false
     scene = new Scene {
       root = new VBox(10,
         new HBox(
@@ -384,27 +498,34 @@ object sentimentgui extends JFXApp {
           SadnessCheckBox,
           SurpriseCheckBox
         ),
-        new HBox(
-          new HBox(20,
-            new Text("Hashtag :"),
-            loadDataConfirm,
-            hashtagInput,
-            hashtagConfirm,
-
-            dateInput
-          )
+        keyTitledPane,
+        new HBox(10,
+          new Text("Train model :"),
+          resetModelConfirm,
+          loadDataConfirm,
+          holdTrainingConfirm,
+          fileConfirm,
+          new Text("Quality:"),
+          clasifierQualityField
+        ),
+        advancedClasifierOptionsTitledPane,
+        new HBox(20,
+          new Text("Hashtag :"),
+          hashtagInput,
+          hashtagConfirm,
+          dateInput
         ),
         new HBox(20,
           new Text("Scope :"),
           sliderInput,
           scopeField,
           dhComboBox
-        ),
-        new HBox(20,
-          new Text("File input:"),
-          fileConfirm
-
         )
+//        new HBox(20,
+//          new Text("File input:"),
+//          fileConfirm
+//
+//        )
       )
     }
     onCloseRequest = handle {
