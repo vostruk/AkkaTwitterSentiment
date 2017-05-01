@@ -14,10 +14,9 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
         .fromFile(filenameToRead) //ex "categories_init_learn.txt"
         .getLines
         .foreach { line =>
-          val (cat, tw) = line.split("\\t")
-          naiveBayesActor ! DocumentCategoryMessage(tw, cat)
+          val r = line.split("\\t")
+          naiveBayesActor ! DocumentCategoryMessage(r(2), r(1))
         }
-
     }
   }
 }
