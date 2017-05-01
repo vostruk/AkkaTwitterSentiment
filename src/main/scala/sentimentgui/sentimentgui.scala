@@ -379,6 +379,9 @@ object sentimentgui extends JFXApp {
     text = "File"
     onAction = { ae =>
       var file = inputFileChooser.showOpenDialog(stage)
+      if (file != null) {
+       //process it
+      }
     }
   }
   val CKeyInput = new TextField{
