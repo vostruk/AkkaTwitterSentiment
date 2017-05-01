@@ -41,6 +41,9 @@ import scalafx.scene.{Group, Scene}
 import javafx.stage.FileChooser
 import javafx.stage.FileChooser.ExtensionFilter
 import javafx.scene.control.TitledPane
+import javafx.scene.control.Alert
+import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.Alert.AlertType.INFORMATION
 
 object sentimentgui extends JFXApp {
 
@@ -175,7 +178,47 @@ object sentimentgui extends JFXApp {
   def getASecretFromInput () : String ={
     return ASecretInput.getText()
   }
+  def isAllDigits(x: String) = x forall Character.isDigit
+  def getPseudocountFromInput () : Double ={
+    val s = pseudocountInput.getText()
+    if (isAllDigits(s)){
+      val t = s.toDouble
+      if (t<=0) {new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()}
+      return t
+    }
+    else{
+      new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()
+      return 1.0
+    }
 
+  }
+  def getFrequencyThresholdFromInput () : Int ={
+    val s = frequencyThresholdInput.getText()
+    if (isAllDigits(s)){
+      val t = s.toInt
+      if (t<=0) {new Alert(AlertType.INFORMATION, "Frequency threshold has to be a positive integer").showAndWait()}
+      return t
+    }
+    else{
+      new Alert(AlertType.INFORMATION, "Frequency threshold has to be a positive integer").showAndWait()
+      return 1
+    }
+
+//    return frequencyThresholdInput.getText()
+  }
+  def getNgramInput () : Int ={
+    val s = ngramInput.getText()
+    if (isAllDigits(s)){
+      val t = s.toInt
+      if (t<=0) {new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait()}
+      return t
+    }
+    else{
+      new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait()
+      return 1
+    }
+//    return ngramInput.getText()
+  }
 
   //utility
   def sumArray(input:Array[Double]): Double = {
@@ -432,7 +475,9 @@ object sentimentgui extends JFXApp {
   val holdTrainingConfirm = new Button {
     text = "Hold"
     onAction = { ae =>
-
+      println(getPseudocountFromInput())
+      println(getFrequencyThresholdFromInput())
+      println(getNgramInput())
     }
   }
 
