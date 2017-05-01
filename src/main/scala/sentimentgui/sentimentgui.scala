@@ -312,7 +312,7 @@ object sentimentgui extends JFXApp {
 
   }
 
-  val sliderInput = new Slider(1.0,24.0,1.0) {
+  val sliderInput = new Slider(1.0,3.0,2.0) {
     onMouseReleased = { ae =>
       scopeField.text = value.value.toInt.toString
       //scopeField.text = dhComboBox.value.toString
@@ -322,14 +322,15 @@ object sentimentgui extends JFXApp {
 
   val scopeField = new TextField{
     disable = true
-    text = "1"
+    text = "2"
     maxWidth = 40
   }
 
   val dhComboBox = new ComboBox[String](){
 
       items = ObservableBuffer("days","hours")
-      value = "hours"
+      value = "days"
+      disable = true
     onAction = { ae =>
       if (value.value.toString == "days"){
         sliderInput.value = 1.0
