@@ -31,6 +31,13 @@ import akka.pattern.ask
 import scala.concurrent.duration._
 import akka.util._
 
+import scalafx.Includes._
+import scalafx.application.JFXApp
+import scalafx.scene.control.{Button, CheckBox, Label, TextField}
+import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.text.Text
+import scalafx.scene.{Group, Scene}
+
 object sentimentgui extends JFXApp {
 
   //================================ACTORS here =======================
@@ -379,6 +386,12 @@ object sentimentgui extends JFXApp {
           dhComboBox
         )
       )
+    }
+    onCloseRequest = handle {
+      println("app is closing")
+      //there is no Figure.close() !!!
+      //f.close()
+      System.exit(0)
     }
   }
 
