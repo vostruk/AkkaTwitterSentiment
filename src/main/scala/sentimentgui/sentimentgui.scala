@@ -252,7 +252,7 @@ object sentimentgui extends JFXApp {
   val loadDataConfirm = new Button {
     text = "TrainOnline"
     onAction = { ae =>
-      streamActor ! ("start", 200)
+      streamActor ! ("start", 400)
     }
   }
 

@@ -53,7 +53,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
       S(created) = tweet("created_at")
       D(id) = tweet("id")
     } yield {
-      (text, created, id)
+      (text.replaceAll("[\\t\\n\\r]+", " "), created, id)
     }
     implicit val timeout = Timeout(400 seconds)
     //println(result.size)
@@ -95,7 +95,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
     val dtc = parseJsonString(jsonRes)
 
-    val st = dtc.map { tuple => tuple.productIterator.mkString("\t") }
+    val st = dtc.map { tuple => (tuple._3, tuple._2).productIterator.mkString("\t") }
     new PrintWriter(new FileOutputStream(new File("categorized.txt"),true)) {
       append(st mkString ("\n")); close
     }
