@@ -18,6 +18,7 @@ class Printer(testingActor: ActorRef) extends Actor {
     case PingMessage =>
       val accuracyFuture = testingActor ? EvaluateModel
       println(Await.result(accuracyFuture, 1000 seconds))
+      Thread.sleep(1000)
       self ! PingMessage
   }
 }
@@ -36,7 +37,6 @@ class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
         nbActor =>
           for (line <- lines) {
             nbActor ! DocumentCategoryMessage(line(1), line(0))
-            Thread.sleep(100)
           }
           println("Learning Done!")
       }
@@ -46,12 +46,16 @@ class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
 
 object Main extends App {
   val system = ActorSystem("SAGSystem")
-  val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.05, dp))))
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor()))
   val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", cr)))
   val printer = system.actorOf(Props(new Printer(testingActor)))
   val learner = system.actorOf(Props(new Learner(cr)))
 
   printer ! PingMessage
+  learner ! PingMessage
+  Thread.sleep(15000)
+  println("Changing parameters")
+  cr ! GoodTuringSmoothingModel(2, 10)
+  Thread.sleep(5000)
   learner ! PingMessage
 }

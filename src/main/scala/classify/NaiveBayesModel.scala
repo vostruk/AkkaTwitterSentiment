@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 case class DocumentCategoryMessage(document: String, category: String)
 case class ClassifyDocumentMessage(document: String)
 case class CategoryMessage(category: Option[String])
+case class SetNGramOrder(ngramOrder: Int)
 
 
 class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef) extends Actor {
@@ -24,6 +25,7 @@ class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef) extends Actor {
     case NewCategory(category, categoryActor) => categoryActors(category) = categoryActor
     case DocumentCategoryMessage(document, category) => addDocument(document, category)
     case ClearTrainedModel => categoryActors.clear()
+    case SetNGramOrder =>
     case ClassifyDocumentMessage(document) =>
       if (categoryActors.isEmpty) {
         sender ! CategoryMessage(None)
