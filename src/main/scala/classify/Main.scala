@@ -47,7 +47,7 @@ class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
 object Main extends App {
   val system = ActorSystem("SAGSystem")
   val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.05, dp))))
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.05, dp))))
   val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", cr)))
   val printer = system.actorOf(Props(new Printer(testingActor)))
   val learner = system.actorOf(Props(new Learner(cr)))

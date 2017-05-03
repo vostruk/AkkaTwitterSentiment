@@ -15,13 +15,15 @@ case class ClassifyDocumentMessage(document: String)
 case class CategoryMessage(category: Option[String])
 
 
-class NaiveBayesModelActor(documentPreprocessor: DocumentPreprocessor, catgoriesRepositoryActor: ActorRef) extends Actor {
+class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef) extends Actor {
 
   val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()
+  val documentPreprocessor = new DocumentPreprocessor(2)
 
   override def receive = {
     case NewCategory(category, categoryActor) => categoryActors(category) = categoryActor
     case DocumentCategoryMessage(document, category) => addDocument(document, category)
+    case ClearTrainedModel => categoryActors.clear()
     case ClassifyDocumentMessage(document) =>
       if (categoryActors.isEmpty) {
         sender ! CategoryMessage(None)

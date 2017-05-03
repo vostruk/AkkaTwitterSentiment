@@ -80,8 +80,8 @@ object sentimentgui extends JFXApp {
   //=============================================
 
   val dp = new DocumentPreprocessor(2)
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.5, dp))))
-  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
+  val cr = system.actorOf(Props(new CategoriesRepositoryActor(() => new LaplaceSmoothingCategoryModel(0.5, dp))))
+  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(cr)), name = "dpa1")
 
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
