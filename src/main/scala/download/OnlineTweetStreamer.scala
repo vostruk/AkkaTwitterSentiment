@@ -10,22 +10,21 @@ import classify.DocumentCategoryMessage
 import akka.actor.ActorRef
 import akka.actor.Actor
 
-import collection.mutable.Map
 import scala.collection.mutable
 import scala.collection.immutable
 
+case class StartStreamingMessage(emoList : List[String], GEmoMap : immutable.Map[String, immutable.Set[String]])
+case class AskAboutTweetsProcessedMessage()
 
 class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken, receiver: ActorRef) extends Actor {
 
-  val GlobalEmojiMap = immutable.Map("happiness" -> List("😀"),  "surprise" -> List("😯"), "sadness"  -> List("☹️"),  "anger" ->  List("😠"), "disgust" -> List("\uD83D\uDE12") ,  "fear"  -> List("\uD83D\uDE31"))
+  var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
   var AgentEmotionsList : List[String] = "happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil
-
   val client = TwitterStreamingClient(consumerToken, accessToken)
   var countReceived = 0
-
   var emojiListToStream: List[String] = Nil
-
+  var actorOnHold = true
 
   def filterEmoji(t : String): String = {
     val globalemojiList : List[String] = GlobalEmojiMap.values.flatten.toList
@@ -51,33 +50,36 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
 
   def sendTweetText: PartialFunction[StreamingMessage, Unit] = {
     case tweet: Tweet => {
-      val emoji = filterEmoji(tweet.text)
-      if (countReceived > 0) {
-       if(emoji!="None" && emoji != "Many")
-        receiver ! DocumentCategoryMessage(tweet.text, emoji)
-      }else context.stop(self);
-      countReceived = countReceived - 1
+      if (!actorOnHold) {
+        val emoji = filterEmoji(tweet.text)
+        if (emoji != "None" && emoji != "Many") {
+          receiver ! DocumentCategoryMessage(tweet.text, emoji)
+          countReceived = countReceived + 1
+        }
+      }
     }
     case warning: WarningMessage => println("koniec bo blad " + warning.toString)
   }
 
   def receive = {
-    case ("start", num: Int) => {
-      countReceived = num
-      client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText)
-    }
-
-    case emoList : List[String] => {
+    case StartStreamingMessage(emoList : List[String], emomap) => {
       AgentEmotionsList = emoList
+      GlobalEmojiMap = emomap
       emoList.foreach(
         emo => {
           if(GlobalEmojiMap.contains(emo)) {
-            emojiListToStream = emojiListToStream ::: GlobalEmojiMap(emo)
+            emojiListToStream = emojiListToStream ::: GlobalEmojiMap(emo).toList
             AgentEmotionsList :+ emo
           }
         }
       )
+
+      actorOnHold = false
+      client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText)
+
     }
+    case AskAboutTweetsProcessedMessage() => sender ! countReceived
+
   }
 
 }

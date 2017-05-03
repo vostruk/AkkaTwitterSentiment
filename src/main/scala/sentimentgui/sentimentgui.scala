@@ -1,12 +1,14 @@
 package sentimentgui
 
-import akka.actor.{Props, ActorSystem}
+//import akka.actor.Status.{Success, Failure}
+import akka.actor.{Kill, Props, ActorSystem}
 import akka.util.Timeout
 import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
-import download.{TweetDatesRangeDownloader,  OnlineTweetStreamer}
+import download.{StartStreamingMessage,  TweetDatesRangeDownloader, OnlineTweetStreamer}
 
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 import scalafx.application.JFXApp
@@ -26,7 +28,7 @@ import java.time.LocalDate
 import scalafx.scene.control.Slider
 import scalafx.scene.control.ComboBox
 import javafx.collections.FXCollections
-import scala.util.Random
+import scala.util.{Failure, Success, Random}
 import akka.pattern.ask
 import scala.concurrent.duration._
 import akka.util._
@@ -44,32 +46,42 @@ import javafx.scene.control.TitledPane
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.Alert.AlertType.INFORMATION
+import akka.actor.OneForOneStrategy
+import akka.actor.SupervisorStrategy._
+import scala.concurrent.duration._
 
 object sentimentgui extends JFXApp {
 
+  def getCKeyFromInput () : String ={
+    return CKeyInput.getText()
+  }
+  def getCSecretFromInput () : String ={
+    return CSecretInput.getText()
+  }
+  def getATokenFromInput () : String ={
+    return ATokenInput.getText()
+  }
+  def getASecretFromInput () : String ={
+    return ASecretInput.getText()
+  }
+
+  val system = ActorSystem("DownloadSystem")
+
   //================================ACTORS here =======================
 
-  val CKey = "9DZO2bQPgmXO4r2eML5yVE7tb";
-  val CSecret = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW";
-  val AToken = "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0";
-  val ASecret = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x";
+  val CKey = "9DZO2bQPgmXO4r2eML5yVE7tb"; // getCKeyFromInput() //
+  val CSecret = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW"; //getCSecretFromInput() //
+  val AToken =  "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0"; //getATokenFromInput() //
+  val ASecret = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x"; //getASecretFromInput() //
 
   val consumerToken = ConsumerToken( CKey, CSecret)
   val accessToken = AccessToken(AToken, ASecret)
 
   //=============================================
 
-  var AgentEmotionsList : List[String] = "happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil
-
-  val system = ActorSystem("DownloadSystem")
-
   val dp = new DocumentPreprocessor(2)
   val cr = system.actorOf(Props(new CategoriesRepositoryActor(dp, () => new LaplaceSmoothingCategoryModel(0.5, dp))))
   val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(dp, cr)), name = "dpa1")
-
-  val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
-
-  streamActor ! AgentEmotionsList
 
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
@@ -166,18 +178,6 @@ object sentimentgui extends JFXApp {
     return sliderInput.value.value.toInt.toDouble
   }
 
-  def getCKeyFromInput () : String ={
-    return CKeyInput.getText()
-  }
-  def getCSecretFromInput () : String ={
-    return CSecretInput.getText()
-  }
-  def getATokenFromInput () : String ={
-    return ATokenInput.getText()
-  }
-  def getASecretFromInput () : String ={
-    return ASecretInput.getText()
-  }
   def isAllDigits(x: String) = x forall Character.isDigit
   def getPseudocountFromInput () : Double ={
     val s = pseudocountInput.getText()
@@ -323,7 +323,10 @@ object sentimentgui extends JFXApp {
   val loadDataConfirm = new Button {
     text = "TrainOnline"
     onAction = { ae =>
-      streamActor ! ("start", 400)
+      val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
+      var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
+
+      streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }
 
@@ -479,7 +482,11 @@ object sentimentgui extends JFXApp {
   val holdTrainingConfirm = new Button {
     text = "Hold"
     onAction = { ae =>
-
+      implicit val timeout = Timeout(50 seconds)
+      system.actorSelection("/user/streamActor").resolveOne().onComplete {
+        case Success(st) => st ! Kill
+        case Failure(ex) => println("Actor u wanna kill doesn't exist")
+      }
     }
   }
 
