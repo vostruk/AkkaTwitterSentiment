@@ -1,7 +1,7 @@
 package sentimentgui
 
 //import akka.actor.Status.{Success, Failure}
-import akka.actor.{ActorSystem, Kill, Props}
+import akka.actor.{Actor, ActorSystem, Kill, OneForOneStrategy, Props}
 import akka.util.Timeout
 import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
@@ -50,7 +50,6 @@ import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.Alert.AlertType.INFORMATION
 
-import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy._
 import classify.Main.cr
 
@@ -116,6 +115,7 @@ object sentimentgui extends JFXApp {
       println(vals.size)
     }
   }
+
 
   def refreshGui(): Unit = {
 
@@ -482,6 +482,7 @@ object sentimentgui extends JFXApp {
     onAction = { ae =>
         println("Clearing trained model.")
         cr ! ClearTrainedModel
+        //cq ! GuiUpdateQuality("test")
     }
   }
 
@@ -570,6 +571,17 @@ object sentimentgui extends JFXApp {
     text = "0"
     maxWidth = 30
   }
+
+  abstract class QualityIn
+  case class GuiUpdateQuality(input :String) extends QualityIn
+  class ShowClassificationQualityActor extends Actor {
+
+    override def receive = {
+      case GuiUpdateQuality(inputString :String) =>
+        setQualityField(inputString)
+    }
+  }
+  val cq = system.actorOf(Props(new ShowClassificationQualityActor()))
 
 
   stage = new JFXApp.PrimaryStage {
