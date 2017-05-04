@@ -1,11 +1,11 @@
 package sentimentgui
 
 //import akka.actor.Status.{Success, Failure}
-import akka.actor.{Kill, Props, ActorSystem}
+import akka.actor.{ActorSystem, Kill, Props}
 import akka.util.Timeout
 import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
-import download.{StartStreamingMessage,  TweetDatesRangeDownloader, OnlineTweetStreamer}
+import download.{OnlineTweetStreamer, StartStreamingMessage, TweetDatesRangeDownloader}
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,13 +23,17 @@ import scalafx.scene.control.CheckBox
 import scalafx.scene.text.Text
 import breeze.linalg._
 import breeze.plot._
+
 import scalafx.scene.control.DatePicker
 import java.time.LocalDate
+
 import scalafx.scene.control.Slider
 import scalafx.scene.control.ComboBox
 import javafx.collections.FXCollections
-import scala.util.{Failure, Success, Random}
+
+import scala.util.{Failure, Random, Success}
 import akka.pattern.ask
+
 import scala.concurrent.duration._
 import akka.util._
 
@@ -39,15 +43,17 @@ import scalafx.scene.control.{Button, CheckBox, Label, TextField}
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.scene.text.Text
 import scalafx.scene.{Group, Scene}
-
 import javafx.stage.FileChooser
 import javafx.stage.FileChooser.ExtensionFilter
 import javafx.scene.control.TitledPane
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.Alert.AlertType.INFORMATION
+
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy._
+import classify.Main.cr
+
 import scala.concurrent.duration._
 
 object sentimentgui extends JFXApp {
@@ -179,28 +185,28 @@ object sentimentgui extends JFXApp {
 
   def isAllDigits(x: String) = x forall Character.isDigit
   def getPseudocountFromInput () : Double ={
-    val s = pseudocountInput.getText()
+    val s = pseudoOrFreqInput.getText()
     if (isAllDigits(s)){
       val t = s.toDouble
-      if (t<=0) {new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()}
+      if (t<=0) {new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0}
       return t
     }
     else{
       new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()
-      return 1.0
+      return -1.0
     }
 
   }
   def getFrequencyThresholdFromInput () : Int ={
-    val s = frequencyThresholdInput.getText()
+    val s = pseudoOrFreqInput.getText()
     if (isAllDigits(s)){
       val t = s.toInt
-      if (t<=0) {new Alert(AlertType.INFORMATION, "Frequency threshold has to be a positive integer").showAndWait()}
+      if (t<=0) {new Alert(AlertType.INFORMATION, "Frequency threshold has to be a positive integer").showAndWait(); return -1}
       return t
     }
     else{
       new Alert(AlertType.INFORMATION, "Frequency threshold has to be a positive integer").showAndWait()
-      return 1
+      return -1
     }
 
 //    return frequencyThresholdInput.getText()
@@ -209,12 +215,12 @@ object sentimentgui extends JFXApp {
     val s = ngramInput.getText()
     if (isAllDigits(s)){
       val t = s.toInt
-      if (t<=0) {new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait()}
+      if (t<=0) {new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait(); return -1}
       return t
     }
     else{
       new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait()
-      return 1
+      return -1
     }
 //    return ngramInput.getText()
   }
@@ -474,7 +480,8 @@ object sentimentgui extends JFXApp {
   val resetModelConfirm = new Button {
     text = "Reset"
     onAction = { ae =>
-
+        println("Clearing trained model.")
+        cr ! ClearTrainedModel
     }
   }
 
@@ -489,14 +496,13 @@ object sentimentgui extends JFXApp {
     }
   }
 
-  val pseudocountInput = new TextField{
+  val pseudoOrFreqInput = new TextField{
     text = "2"
     maxWidth = 30
   }
-  val frequencyThresholdInput = new TextField{
-    text = "2"
-    maxWidth = 30
-  }
+  val pseudoOrFreqInputLabel = new Text("           pseudocount:")
+
+
   val ngramInput = new TextField{
     text = "2"
     maxWidth = 30
@@ -508,10 +514,39 @@ object sentimentgui extends JFXApp {
     //    disable = true
     onAction = { ae =>
       if (value.value.toString == "Laplace"){
-
+        pseudoOrFreqInputLabel.text = "           pseudocount:"
+        pseudoOrFreqInput.text = "2"
       }
       if (value.value.toString == "Good-Turing"){
+        pseudoOrFreqInputLabel.text = "frequency threshold:"
+        pseudoOrFreqInput.text = "10"
+      }
 
+    }
+  }
+
+  val setParamsButton = new Button {
+    text = "Set"
+    onAction = { ae =>
+      //println("parameters set")
+
+      val ngram = getNgramInput()
+      if (ngram != -1) {
+
+        if (smoothingSelectionComboBox.value.value.toString == "Laplace"){
+          val pseudo = getPseudocountFromInput()
+          if (pseudo != -1) {
+            println("setting to Laplace")
+            cr ! LaplaceSmoothingModel(ngram, pseudo)
+          }
+        }
+        if (smoothingSelectionComboBox.value.value.toString == "Good-Turing"){
+          val freq = getFrequencyThresholdFromInput()
+          if (freq != -1.0) {
+            println("setting to Good-Turing")
+            cr ! GoodTuringSmoothingModel(ngram, freq)
+          }
+        }
       }
 
     }
@@ -521,12 +556,11 @@ object sentimentgui extends JFXApp {
     new HBox(5,
       new Text("Smoothing:"),
       smoothingSelectionComboBox,
-      new Text("pseudocount:"),
-      pseudocountInput,
-      new Text("freq. threshold:"),
-      frequencyThresholdInput,
       new Text("n-grams:"),
-      ngramInput
+      ngramInput,
+      pseudoOrFreqInputLabel,
+      pseudoOrFreqInput,
+      setParamsButton
     )
   )
   advancedClasifierOptionsTitledPane.expanded = false
