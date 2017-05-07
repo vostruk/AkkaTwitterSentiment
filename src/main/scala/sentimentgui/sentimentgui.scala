@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorSystem, Kill, OneForOneStrategy, Props}
 import akka.util.Timeout
 import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
-import download.{OnlineTweetStreamer, StartStreamingMessage, TweetDatesRangeDownloader}
+import download.{OnlineTweetStreamer, StartStreamingMessage, StopStreamingMessage, TweetDatesRangeDownloader}
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -492,7 +492,7 @@ object sentimentgui extends JFXApp {
     onAction = { ae =>
       implicit val timeout = Timeout(50 seconds)
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
-        case Success(st) => st ! Kill
+        case Success(st) => st ! StopStreamingMessage
         case Failure(ex) => println("Actor u wanna kill doesn't exist")
       }
     }

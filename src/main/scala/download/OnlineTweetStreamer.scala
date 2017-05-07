@@ -9,11 +9,15 @@ import com.danielasfregola.twitter4s.entities.enums.Language
 import classify.DocumentCategoryMessage
 import akka.actor.ActorRef
 import akka.actor.Actor
+import com.danielasfregola.twitter4s.http.clients.streaming.TwitterStream
 
 import scala.collection.mutable
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class StartStreamingMessage(emoList : List[String], GEmoMap : immutable.Map[String, immutable.Set[String]])
+case object StopStreamingMessage
 case class AskAboutTweetsProcessedMessage()
 
 class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken, receiver: ActorRef) extends Actor {
@@ -25,6 +29,7 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
   var countReceived = 0
   var emojiListToStream: List[String] = Nil
   var actorOnHold = true
+  var streamerFutureOption: Option[Future[TwitterStream]] = None
 
   def filterEmoji(t : String): String = {
     val globalemojiList : List[String] = GlobalEmojiMap.values.flatten.toList
@@ -75,10 +80,18 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       )
 
       actorOnHold = false
-      client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText)
-
+      streamerFutureOption = Some(client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText))
+      Thread.sleep(15000)
+      self ! StopStreamingMessage
     }
-    case AskAboutTweetsProcessedMessage() => sender ! countReceived
+    case StopStreamingMessage =>
+      streamerFutureOption match {
+        case None => Unit
+        case Some(streamerFuture) =>
+          streamerFuture.foreach(_.close())
+      }
+    case AskAboutTweetsProcessedMessage() =>
+      sender ! countReceived
 
   }
 
