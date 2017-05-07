@@ -81,8 +81,6 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
 
       actorOnHold = false
       streamerFutureOption = Some(client.filterStatuses(tracks = emojiListToStream, languages = List(Language.English))(sendTweetText))
-      Thread.sleep(15000)
-      self ! StopStreamingMessage
     }
     case StopStreamingMessage =>
       streamerFutureOption match {
