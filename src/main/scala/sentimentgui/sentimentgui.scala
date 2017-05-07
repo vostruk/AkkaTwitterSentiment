@@ -87,6 +87,7 @@ object sentimentgui extends JFXApp {
 
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
+  routerActor ! SetWorkersNumber(3)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
 
