@@ -28,50 +28,21 @@ import scala.util.parsing.json.JSON
 /**
   * Created by ostruk on 4/25/17.
   */
+case object GetDateToStatMessage
 
 class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, AccessToken: String, AccessSecret: String, naiveBayesActor: ActorRef) extends Actor {
 
   val consumer = new CommonsHttpOAuthConsumer(ConsumerKey, ConsumerSecret);
   val DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
-
-  def parseJsonString( jsonString: String) : List[(String, String, String)] = {
-    class CC[T] {
-      def unapply(a: Any): Option[T] = Some(a.asInstanceOf[T])
-    }
-
-    object M extends CC[immutable.Map[String, Any]]
-    object L extends CC[List[Any]]
-    object S extends CC[String]
-    object D extends CC[Double]
-    object B extends CC[Boolean]
-    val bString = jsonString.replaceAll("[\\t\\n\\r]+", " ");
-    val result = for {
-      Some(M(map)) <- List(JSON.parseFull(bString))
-      L(statuses) = map("statuses")
-      M(tweet) <- statuses
-      S(text) = tweet("text")
-      S(created) = tweet("created_at")
-      D(id) = tweet("id")
-    } yield {
-      (text.replaceAll("[\\t\\n\\r]+", " "), created, id)
-    }
-    implicit val timeout = Timeout(400 seconds)
-    //println(result.size)
-
-    //CAN PRINT parsed Tweets to file
-    val st = result.map { tuple => tuple.productIterator.mkString("\t") }
-    new PrintWriter("textTweets.txt") {
-      write(st mkString ("\n")); close
-    }
-
-    //!!!!!!!or can send for classification
-    val DatesTweetsCategories = result.map { tuple =>   (tuple._2, tuple._1, (Await.result(naiveBayesActor ? ClassifyDocumentMessage(tuple._1, self, None), timeout.duration).asInstanceOf[CategoryMessage]).category.get.toString())}
-
-    println("received categorized elements")
-    println(DatesTweetsCategories.size)
-    return DatesTweetsCategories
-
+  class CC[T] {
+    def unapply(a: Any): Option[T] = Some(a.asInstanceOf[T])
   }
+
+  object M extends CC[immutable.Map[String, Any]]
+  object L extends CC[List[Any]]
+  object S extends CC[String]
+  object D extends CC[Double]
+  object B extends CC[Boolean]
 
 
   def search(num: Int, query: String) {
@@ -93,49 +64,37 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 //    }
     //myparse(jsonRes, "onlyTweets_"+num+".txt");
 
-    val dtc = parseJsonString(jsonRes)
 
-    val st = dtc.map { tuple => (tuple._3, tuple._2).productIterator.mkString("\t") }
-    new PrintWriter(new FileOutputStream(new File("categorized.txt"),true)) {
-      append(st mkString ("\n")); close
+    val bString = jsonRes.replaceAll("[\\t\\n\\r]+", " ");
+    val result = for {
+      Some(M(map)) <- List(JSON.parseFull(bString))
+      L(statuses) = map("statuses")
+      M(tweet) <- statuses
+      S(text) = tweet("text")
+      S(created) = tweet("created_at")
+      D(id) = tweet("id")
+    } yield {
+      (text.replaceAll("[\\t\\n\\r]+", " "), created, id)
+    }
+    implicit val timeout = Timeout(400 seconds)
+    //println(result.size)
+
+    //CAN PRINT parsed Tweets to file
+    val st = result.map { tuple => tuple.productIterator.mkString("\t") }
+    new PrintWriter("textTweets.txt") {
+      write(st mkString ("\n")); close
     }
 
-    val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
-    val sf = new SimpleDateFormat(TWITTER, Locale.US);
+    //!!!!!!!or can send for classification
+    //val DatesTweetsCategories = result.map { tuple =>   (tuple._2, tuple._1, (Await.result(naiveBayesActor ? ClassifyDocumentMessage(tuple._1, self, None), timeout.duration).asInstanceOf[CategoryMessage]).category.get.toString())}
+    result.foreach { tuple => naiveBayesActor ! ClassifyDocumentMessage(tuple._1, self, (tuple._2, tuple._1))}
 
-    //for ((d, t, c) <- dtc)
-    dtc.foreach(tuple => {
-      val d = tuple._1
-      val t = tuple._2
-      val c = tuple._3
+    implicit val formats = DefaultFormats
+    val parsedJson = Json.parse(jsonRes.toString)
 
+    val value1 = parsedJson \ "search_metadata" \ "next_results"
 
-      val date = sf.parse(d.toString())
-      val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
-      println(dayMonth)
-
-      if(c != null) {
-
-        if(!DateToStat.contains(c))
-         {DateToStat(c) = Map[String, Int](); println("Set new emoji to map!!###") }
-         //if sentiment didn't exist in map will be created now
-
-        if(!DateToStat(c).contains(dayMonth))
-          DateToStat(c)(dayMonth) = 1;
-        else DateToStat(c)( dayMonth) = DateToStat(c)( dayMonth) + 1
-      }
-      else println("Ccategory is null wtf??")
-
-    })
-
-    sender ! DateToStat
-
-   // implicit val formats = DefaultFormats
-   // val parsedJson = Json.parse(jsonRes.toString)
-
-   // val value1 = parsedJson \ "search_metadata" \ "next_results"
-
-    // println (value1.as[String])//.map(_.as[String]).lift(1))
+    println (value1.as[String])//.map(_.as[String]).lift(1))
 
     //search(num - 1, value1.as[String])
   }
@@ -158,6 +117,35 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
   def receive = {
     case (q: String, f: String, t: String) => {
       search(1, encodeFirstQuery(q, f, t))
+    }
+    case GetDateToStatMessage => {
+      sender ! DateToStat
+    }
+    case CategoryMessage(category: Option[String], dateTweet: (String, String)) => {
+
+      val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
+      val sf = new SimpleDateFormat(TWITTER, Locale.US);
+
+        val c = category.get
+        val d = dateTweet._1
+        val t = dateTweet._2
+
+        val date = sf.parse(d.toString())
+        val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
+        println(dayMonth)
+
+        if(c != null) {
+
+          if(!DateToStat.contains(c))
+          {DateToStat(c) = Map[String, Int](); println("Set new emoji to map!!###") }
+          //if sentiment didn't exist in map will be created now
+
+          if(!DateToStat(c).contains(dayMonth))
+            DateToStat(c)(dayMonth) = 1;
+          else DateToStat(c)( dayMonth) = DateToStat(c)( dayMonth) + 1
+        }
+        else println("Ccategory is null wtf??")
+
     }
   }
 }

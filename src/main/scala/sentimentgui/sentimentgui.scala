@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorSystem, Kill, OneForOneStrategy, Props}
 import akka.util.Timeout
 import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
-import download.{OnlineTweetStreamer, StartStreamingMessage, StopStreamingMessage, TweetDatesRangeDownloader}
+import download._
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -90,10 +90,10 @@ object sentimentgui extends JFXApp {
   routerActor ! SetWorkersNumber(3)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
-
+  val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   def getclassifiedDataFromActor() = {
 
-    implicit val duration: Timeout = 500 seconds
+
 
     //"2017-03-31"
     val scp = getScopeFromInput()
@@ -105,9 +105,17 @@ object sentimentgui extends JFXApp {
 
     val t =  dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()//"2017-04-24"
 
-    val ans = Await.result(TweetDatesRangeDownloaderActor ? (getHashtagFromInput(), fr, t), 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
-    //println(ans)
+    //val ans = Await.result(TweetDatesRangeDownloaderActor ? (getHashtagFromInput(), fr, t), 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
+
+    TweetDatesRangeDownloaderActor ! (getHashtagFromInput(), fr, t)
     //implicit def intlist2dlist(il: List[Int]): List[Double] = il.map(_.toDouble)
+
+  }
+
+
+  def refreshGui(): Unit = {
+    implicit val duration: Timeout = 500 seconds
+    val ans = Await.result(TweetDatesRangeDownloaderActor ? GetDateToStatMessage, 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
     for ((k, v) <- ans)
     {
       val (keys, vals) = v.toSeq.sortBy(_._1).unzip
@@ -115,11 +123,6 @@ object sentimentgui extends JFXApp {
       println(k)
       println(vals.size)
     }
-  }
-
-
-  def refreshGui(): Unit = {
-
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
     loadData(ActorTweetsDataReceved)//genRandomData(getScopeFromInput()))
 
@@ -329,7 +332,7 @@ object sentimentgui extends JFXApp {
   val loadDataConfirm = new Button {
     text = "TrainOnline"
     onAction = { ae =>
-      val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
+
       var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
