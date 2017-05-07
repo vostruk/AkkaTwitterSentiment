@@ -88,6 +88,7 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
         case Some(streamerFuture) =>
           streamerFuture.foreach(_.close())
       }
+      streamerFutureOption = None
     case AskAboutTweetsProcessedMessage() =>
       sender ! countReceived
 
