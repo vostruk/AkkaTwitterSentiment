@@ -51,7 +51,8 @@ import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.Alert.AlertType.INFORMATION
 
 import akka.actor.SupervisorStrategy._
-import classify.Main.cr
+import akka.routing.{RoundRobinGroup, RoundRobinPool}
+import classify.Main.categoriesRepository
 
 import scala.concurrent.duration._
 
@@ -84,10 +85,9 @@ object sentimentgui extends JFXApp {
 
   //=============================================
 
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor()))
-  val NbMActor = system.actorOf(Props(new NaiveBayesModelActor(cr)), name = "dpa1")
-
-  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, NbMActor)), name = "DownloadActor")
+  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
+  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   var ActorTweetsDataReceved: List[List[Double]] = Nil
 
   def getclassifiedDataFromActor() = {
@@ -328,7 +328,7 @@ object sentimentgui extends JFXApp {
   val loadDataConfirm = new Button {
     text = "TrainOnline"
     onAction = { ae =>
-      val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, NbMActor)), name = "streamActor")
+      val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
       var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
@@ -481,7 +481,7 @@ object sentimentgui extends JFXApp {
     text = "Reset"
     onAction = { ae =>
         println("Clearing trained model.")
-        cr ! ClearTrainedModel
+        categoriesRepository ! ClearTrainedModel
         //cq ! GuiUpdateQuality("test")
     }
   }
@@ -538,14 +538,14 @@ object sentimentgui extends JFXApp {
           val pseudo = getPseudocountFromInput()
           if (pseudo != -1) {
             println("setting to Laplace")
-            cr ! LaplaceSmoothingModel(ngram, pseudo)
+            categoriesRepository ! LaplaceSmoothingModel(ngram, pseudo)
           }
         }
         if (smoothingSelectionComboBox.value.value.toString == "Good-Turing"){
           val freq = getFrequencyThresholdFromInput()
           if (freq != -1.0) {
             println("setting to Good-Turing")
-            cr ! GoodTuringSmoothingModel(ngram, freq)
+            categoriesRepository ! GoodTuringSmoothingModel(ngram, freq)
           }
         }
       }

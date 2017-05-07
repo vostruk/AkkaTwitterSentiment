@@ -65,7 +65,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     }
 
     //!!!!!!!or can send for classification
-    val DatesTweetsCategories = result.map { tuple =>   (tuple._2, tuple._1, (Await.result(naiveBayesActor ? ClassifyDocumentMessage(tuple._1), timeout.duration).asInstanceOf[CategoryMessage]).category.get.toString())}
+    val DatesTweetsCategories = result.map { tuple =>   (tuple._2, tuple._1, (Await.result(naiveBayesActor ? ClassifyDocumentMessage(tuple._1, self, None), timeout.duration).asInstanceOf[CategoryMessage]).category.get.toString())}
 
     println("received categorized elements")
     println(DatesTweetsCategories.size)

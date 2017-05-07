@@ -16,7 +16,7 @@ class Printer(testingActor: ActorRef) extends Actor {
 
   override def receive = {
     case PingMessage =>
-      val accuracyFuture = testingActor ? EvaluateModel
+      val accuracyFuture = testingActor ? GetAccuracy
       println(Await.result(accuracyFuture, 1000 seconds))
       Thread.sleep(1000)
       self ! PingMessage
@@ -24,7 +24,7 @@ class Printer(testingActor: ActorRef) extends Actor {
 }
 
 
-class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
+class Learner(routerActor: ActorRef) extends Actor {
   val source = scala.io.Source.fromFile("newsgroups_dataset.txt")
   val inputText = try source.mkString.toLowerCase finally source.close()
   val lines = inputText.toLowerCase.split("\n").map(_.split("\t", 2))
@@ -32,30 +32,32 @@ class Learner(categoriesRepositoryActor: ActorRef) extends Actor {
 
   override def receive = {
     case PingMessage =>
-      val nbActorFuture = (categoriesRepositoryActor ? CreateNaiveBayesModelActor).mapTo[ActorRef]
-      nbActorFuture.map {
-        nbActor =>
-          for (line <- lines) {
-            nbActor ! DocumentCategoryMessage(line(1), line(0))
-          }
-          println("Learning Done!")
+      for (line <- lines) {
+        routerActor ! DocumentCategoryMessage(line(1), line(0))
       }
+      println("Learning Done!")
   }
 }
 
 
 object Main extends App {
   val system = ActorSystem("SAGSystem")
-  val cr = system.actorOf(Props(new CategoriesRepositoryActor()))
-  val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", cr)))
+  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
+  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
+  routerActor ! SetWorkersNumber(10)
+  val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", routerActor)))
   val printer = system.actorOf(Props(new Printer(testingActor)))
-  val learner = system.actorOf(Props(new Learner(cr)))
+  val learner = system.actorOf(Props(new Learner(routerActor)))
 
   printer ! PingMessage
+  testingActor ! StartEvaluatingModel
   learner ! PingMessage
   Thread.sleep(15000)
   println("Changing parameters")
-  cr ! GoodTuringSmoothingModel(2, 10)
+  categoriesRepository ! GoodTuringSmoothingModel(2, 10)
   Thread.sleep(5000)
   learner ! PingMessage
+  Thread.sleep(15000)
+  println("Stop")
+  testingActor ! StopEvaluatingModel
 }

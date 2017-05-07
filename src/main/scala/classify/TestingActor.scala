@@ -10,11 +10,19 @@ import scala.concurrent.{Await, Future}
 
 
 case object EvaluateModel
+case object StartEvaluatingModel
+case object StopEvaluatingModel
+case object GetAccuracy
 
 
-class TestingActor(testDataFileName: String, categoriesRepositoryActor: ActorRef) extends Actor {
+class TestingActor(testDataFileName: String, naiveBayesModelRouterActor: ActorRef) extends Actor {
   implicit val duration: Timeout = 100 seconds;
   var naiveBayesModelOption: Option[ActorRef] = None
+  var evaluationRunning = false
+  var evaluationRoundInProgress = false
+  var accuracy = 0
+  var correctDecisions = 0
+  var receivedDecisions = 0
 
   val (testLabels, testDocuments) = {
     val source = scala.io.Source.fromFile(testDataFileName)
@@ -24,16 +32,36 @@ class TestingActor(testDataFileName: String, categoriesRepositoryActor: ActorRef
   }
 
   override def receive = {
+    case StartEvaluatingModel =>
+      evaluationRunning = true
+      self ! EvaluateModel
+    case StopEvaluatingModel =>
+      evaluationRunning = false
     case EvaluateModel =>
-      val naiveBayesModel = naiveBayesModelOption.getOrElse(
-        Await.result(categoriesRepositoryActor ? CreateNaiveBayesModelActor, 100 seconds).asInstanceOf[ActorRef]
-      )
-      naiveBayesModelOption = Some(naiveBayesModel)
-      val decisionsFuture = testDocuments.map((doc) => naiveBayesModel ? ClassifyDocumentMessage(doc)).map(_.mapTo[CategoryMessage])
-
-      val decisions = Await.result(Future.sequence(decisionsFuture.map(_.map(_.category))), 100 seconds)
-      val correctDecisions: Double = decisions.map(_.getOrElse("")).zip(testLabels).count((x) => x._1 == x._2)
-      val accuracy = correctDecisions / decisions.size
+      if (!evaluationRoundInProgress) {
+        correctDecisions = 0
+        receivedDecisions = 0
+        evaluationRoundInProgress = true
+        testDocuments.zip(testLabels).foreach((x) => naiveBayesModelRouterActor ! ClassifyDocumentMessage(x._1, self, x._2))
+      }
+      if (evaluationRunning) {
+        Thread.sleep(1000)
+        self ! EvaluateModel
+      }
+    case CategoryMessage(Some(category), trueCategory) if category == trueCategory.asInstanceOf[String] =>
+      receivedDecisions += 1
+      correctDecisions += 1
+      if (receivedDecisions == testDocuments.size) {
+        accuracy = correctDecisions / testDocuments.size
+        evaluationRoundInProgress = false
+      }
+    case CategoryMessage(_, _) =>
+      receivedDecisions += 1
+      if (receivedDecisions == testDocuments.size) {
+        accuracy = correctDecisions / testDocuments.size
+        evaluationRoundInProgress = false
+      }
+    case GetAccuracy =>
       sender ! accuracy
   }
 }
