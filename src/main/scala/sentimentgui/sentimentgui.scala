@@ -9,7 +9,7 @@ import download._
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.mutable.Map
+import scala.collection.mutable.{ListBuffer, Map}
 import scala.concurrent.Await
 import scalafx.application.JFXApp
 import scalafx.collections.ObservableBuffer
@@ -85,15 +85,14 @@ object sentimentgui extends JFXApp {
 
   //=============================================
 
+  var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
+
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
-  var ActorTweetsDataReceved: List[List[Double]] = Nil
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   def getclassifiedDataFromActor() = {
-
-
 
     //"2017-03-31"
     val scp = getScopeFromInput()
@@ -101,30 +100,89 @@ object sentimentgui extends JFXApp {
     val dto = getDateFromInput().plusDays(scp.toLong)
 
     val fr = dfr.getYear().toString()+"-"+dfr.getMonthValue().toString()+"-"+dfr.getDayOfMonth().toString()//"2017-04-20"
-    ActorTweetsDataReceved = Nil
-
     val t =  dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()//"2017-04-24"
 
     //val ans = Await.result(TweetDatesRangeDownloaderActor ? (getHashtagFromInput(), fr, t), 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
-
     TweetDatesRangeDownloaderActor ! (getHashtagFromInput(), fr, t)
     //implicit def intlist2dlist(il: List[Int]): List[Double] = il.map(_.toDouble)
 
   }
 
+  def castMapToList(MP: scala.collection.mutable.Map[String, Map[String, Int]], range: Double): List[List[Double]]= {
+
+
+    //for (i <- -range.toInt to range.toInt){
+
+    // s = List.concat(s, List(i.toDouble))
+
+    //NEED TO GET ALL DATES FROM RANGE and then just count
+    val allDates = new ListBuffer[String]()
+    for ((k, v) <- MP)
+    {
+      val (keys, vals) = v.toSeq.sortBy(_._1).unzip
+      keys.foreach(kk => if(!allDates.contains(kk)){allDates+=kk} )
+    }
+
+    var sampleAngerList = new ListBuffer[Double]()
+    var sampleDisgustList = new ListBuffer[Double]()
+    var sampleFearList = new ListBuffer[Double]()
+    var sampleHappinesList = new ListBuffer[Double]()
+    var sampleSadnessList = new ListBuffer[Double]()
+    var sampleSurpriseList = new ListBuffer[Double]()
+
+
+
+     allDates.foreach( dd => {
+       if(MP.contains("anger") && MP("anger").contains(dd)) {
+         sampleAngerList+=MP("anger")(dd)
+       } else {sampleAngerList+=0}
+
+      if(MP.contains("disgust") && MP("disgust").contains(dd)) {
+        sampleDisgustList+=MP("disgust")(dd)
+      } else {sampleDisgustList+=0}
+
+      if(MP.contains("happiness") && MP("happiness").contains(dd)) {
+        sampleHappinesList+=MP("happiness")(dd)
+      } else {sampleHappinesList+=0}
+
+      if(MP.contains("sadness") && MP("sadness").contains(dd)) {
+        sampleSadnessList+=MP("sadness")(dd)
+      } else {sampleSadnessList+=0}
+
+       if(MP.contains("fear") && MP("fear").contains(dd)) {
+         sampleFearList+=MP("fear")(dd)
+       } else {sampleFearList+=0}
+
+
+       if(MP.contains("surprise") && MP("surprise").contains(dd)) {
+          sampleSurpriseList+=MP("surprise")(dd)
+        } else {sampleSurpriseList+=0}})
+
+    //   sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
+    //  }
+    val sampleInput = List(
+      sampleAngerList.toList,
+      sampleDisgustList.toList,
+      sampleFearList.toList,
+      sampleHappinesList.toList,
+      sampleSadnessList.toList,
+      sampleSurpriseList.toList)
+    return sampleInput
+  }
 
   def refreshGui(): Unit = {
-    implicit val duration: Timeout = 500 seconds
-    val ans = Await.result(TweetDatesRangeDownloaderActor ? GetDateToStatMessage, 500.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
-    for ((k, v) <- ans)
+    implicit val duration: Timeout = 50 seconds
+    val ans = Await.result(TweetDatesRangeDownloaderActor ? GetDateToStatMessage, 50.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
+
+    /*for ((k, v) <- ans)
     {
       val (keys, vals) = v.toSeq.sortBy(_._1).unzip
       ActorTweetsDataReceved :+ (vals map (_.toDouble) )
       println(k)
       println(vals.size)
-    }
+    }*/
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
-    loadData(ActorTweetsDataReceved)//genRandomData(getScopeFromInput()))
+    loadData(castMapToList(ans, getScopeFromInput()*2))//genRandomData(getScopeFromInput()))
 
     f.clearPlot(0)
     p = f.subplot(0)
@@ -243,33 +301,7 @@ object sentimentgui extends JFXApp {
     }
     return sum
   }
-  def genRandomData(range: Double): List[List[Double]]= {
-    val randomGen = scala.util.Random
-    var s : List[Double] = List()
-    var sampleAngerList : List[Double] = List()
-    var sampleDisgustList : List[Double] = List()
-    var sampleFearList : List[Double] = List()
-    var sampleHappinesList : List[Double] = List()
-    var sampleSadnessList : List[Double] = List()
-    var sampleSurpriseList : List[Double] = List()
-    for (i <- -range.toInt to range.toInt){
-//      println(i)
-      s = List.concat(s, List(i.toDouble))
-      sampleAngerList = List.concat(sampleAngerList, List(randomGen.nextDouble()*5+30.0))
-      sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
-      sampleFearList = List.concat(sampleFearList, List(randomGen.nextDouble()*5+50.0))
-      sampleHappinesList = List.concat(sampleHappinesList, List(randomGen.nextDouble()*5+60.0))
-      sampleSadnessList = List.concat(sampleSadnessList, List(randomGen.nextDouble()*5+70.0))
-      sampleSurpriseList = List.concat(sampleSurpriseList, List(randomGen.nextDouble()*5+80.0))
-    }
-    val sampleInput = List(sampleAngerList,
-      sampleDisgustList,
-      sampleFearList,
-      sampleHappinesList,
-      sampleSadnessList,
-      sampleSurpriseList)
-    return sampleInput
-  }
+
 
   var plotUnit = "Days"
   val randomGen = scala.util.Random
@@ -332,9 +364,6 @@ object sentimentgui extends JFXApp {
   val loadDataConfirm = new Button {
     text = "TrainOnline"
     onAction = { ae =>
-
-      var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
-
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }
