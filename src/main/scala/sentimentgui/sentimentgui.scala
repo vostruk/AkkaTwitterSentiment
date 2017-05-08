@@ -386,6 +386,7 @@ object sentimentgui extends JFXApp {
     text = "Ok"
     disable = true
     onAction = { ae =>
+      TweetDatesRangeDownloaderActor ! SetUserKeysDownloader(getCKeyFromInput(),getCSecretFromInput(),getATokenFromInput(),getASecretFromInput())
       getclassifiedDataFromActor()
       refreshGui()
     }
@@ -400,6 +401,10 @@ object sentimentgui extends JFXApp {
       disableLearningConfirm()
       disableTestingConfirm()
       enableHoldLearningConfirm()
+
+      val ct = ConsumerToken( getCKeyFromInput(), getCSecretFromInput())
+      val at = AccessToken(getATokenFromInput(), getASecretFromInput())
+      streamActor ! SetUserKeys(ct,at)
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }

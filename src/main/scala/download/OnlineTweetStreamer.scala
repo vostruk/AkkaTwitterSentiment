@@ -19,13 +19,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class StartStreamingMessage(emoList : List[String], GEmoMap : immutable.Map[String, immutable.Set[String]])
 case object StopStreamingMessage
 case class AskAboutTweetsProcessedMessage()
+case class SetUserKeys(ct: ConsumerToken, at: AccessToken)
 
 class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken, receiver: ActorRef) extends Actor {
 
   var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
   var AgentEmotionsList : List[String] = "happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil
-  val client = TwitterStreamingClient(consumerToken, accessToken)
+  var client = TwitterStreamingClient(consumerToken, accessToken)
   var countReceived = 0
   var emojiListToStream: List[String] = Nil
   var actorOnHold = true
@@ -66,6 +67,8 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
     case warning: WarningMessage => println("koniec bo blad " + warning.toString)
   }
 
+
+
   def receive = {
     case StartStreamingMessage(emoList : List[String], emomap) => {
       AgentEmotionsList = emoList
@@ -91,6 +94,8 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       streamerFutureOption = None
     case AskAboutTweetsProcessedMessage() =>
       sender ! countReceived
+    case SetUserKeys(ct: ConsumerToken, at: AccessToken) =>
+      client = TwitterStreamingClient(ct, at)
 
   }
 

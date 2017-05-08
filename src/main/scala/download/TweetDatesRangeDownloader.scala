@@ -29,10 +29,12 @@ import scala.util.parsing.json.JSON
   * Created by ostruk on 4/25/17.
   */
 case object GetDateToStatMessage
+case class SetUserKeysDownloader(ck: String, cs: String, at: String, as: String)
 
 class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, AccessToken: String, AccessSecret: String, naiveBayesActor: ActorRef) extends Actor {
 
-  val consumer = new CommonsHttpOAuthConsumer(ConsumerKey, ConsumerSecret);
+  var consumer = new CommonsHttpOAuthConsumer(ConsumerKey, ConsumerSecret);
+  consumer.setTokenWithSecret(AccessToken, AccessSecret);
   val DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
   class CC[T] {
     def unapply(a: Any): Option[T] = Some(a.asInstanceOf[T])
@@ -51,7 +53,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
       return
     }
 
-    consumer.setTokenWithSecret(AccessToken, AccessSecret);
+    //consumer.setTokenWithSecret(AccessToken, AccessSecret);
     val request = new HttpGet("https://api.twitter.com/1.1/search/tweets.json" + query);
     consumer.sign(request);
 
@@ -147,6 +149,10 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
         else println("Ccategory is null wtf??")
 
     }
+    case SetUserKeysDownloader(ck: String, cs: String, at: String, as: String) =>
+      consumer = new CommonsHttpOAuthConsumer(ck, cs)
+      consumer.setTokenWithSecret(at, as)
+
   }
 }
 
