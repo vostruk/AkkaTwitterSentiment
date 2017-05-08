@@ -298,6 +298,21 @@ object sentimentgui extends JFXApp {
     }
 //    return ngramInput.getText()
   }
+
+  def getNumberOfWorkersFromInput () : Int ={
+    val s = numberOfWorkersInput.getText()
+    if (isAllDigits(s)){
+      val t = s.toInt
+      if (t<=0) {new Alert(AlertType.INFORMATION, "Number of workers has to be a positive integer").showAndWait(); return -1}
+      return t
+    }
+    else{
+      new Alert(AlertType.INFORMATION, "Number of workers has to be a positive integer").showAndWait()
+      return -1
+    }
+    //    return ngramInput.getText()
+  }
+
   def setQualityField (in: String) : Unit ={
     clasifierQualityField.text = in
   }
@@ -564,6 +579,11 @@ object sentimentgui extends JFXApp {
     maxWidth = 30
   }
 
+  val numberOfWorkersInput = new TextField{
+    text = "4"
+    maxWidth = 40
+  }
+
   val smoothingSelectionComboBox = new ComboBox[String]() {
     items = ObservableBuffer("Laplace", "Good-Turing")
     value = "Laplace"
@@ -605,10 +625,18 @@ object sentimentgui extends JFXApp {
         }
       }
 
+      val nrWork = getNumberOfWorkersFromInput()
+      if (nrWork != -1.0) {
+        //println("Setting numbe")
+        routerActor ! SetWorkersNumber(nrWork)
+      }
+
+
     }
   }
 
   val advancedClasifierOptionsTitledPane = new TitledPane("Advanced clasifier options",
+    new VBox(5,
     new HBox(5,
       new Text("Smoothing:"),
       smoothingSelectionComboBox,
@@ -617,6 +645,11 @@ object sentimentgui extends JFXApp {
       pseudoOrFreqInputLabel,
       pseudoOrFreqInput,
       setParamsButton
+    ),
+      new HBox(5,
+        new Text("Number of workers: "),
+        numberOfWorkersInput
+      )
     )
   )
   advancedClasifierOptionsTitledPane.expanded = false
