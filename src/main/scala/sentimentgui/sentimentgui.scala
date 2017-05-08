@@ -475,7 +475,7 @@ object sentimentgui extends JFXApp {
 
   }
 
-  val sliderInput = new Slider(0.0,3.0,0.0) {
+  val sliderInput = new Slider(0.0,3.0,1.0) {
     onMouseReleased = { ae =>
       scopeField.text = value.value.toInt.toString
       //scopeField.text = dhComboBox.value.toString
