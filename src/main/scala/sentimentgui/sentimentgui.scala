@@ -96,6 +96,8 @@ object sentimentgui extends JFXApp {
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
+  val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
+  //val TestingActorInstance = system.actorOf(Props(new TestingActor("inputTest.txt",routerActor)))
 
   def getclassifiedDataFromActor() = {
 
@@ -497,20 +499,22 @@ object sentimentgui extends JFXApp {
   val fileLearningConfirm = new Button {
     text = "Learn"
     onAction = { ae =>
-      var file = inputFileChooser.showOpenDialog(stage)
-      if (file != null) {
-       //process it
-      }
+//      var file = inputFileChooser.showOpenDialog(stage)
+//      if (file != null) {
+//       //process it
+//      }
+      FileReaderActor ! StartLearningFromFile("textTweets.txt") // other file ?
+
     }
   }
 
   val fileTestingConfirm = new Button {
     text = "Test"
     onAction = { ae =>
-      var file = inputFileChooser.showOpenDialog(stage)
-      if (file != null) {
-        //process it
-      }
+
+      //Testing actor do something
+
+
     }
   }
 
@@ -571,6 +575,7 @@ object sentimentgui extends JFXApp {
       loadDataConfirm.disable = false
 
       implicit val timeout = Timeout(50 seconds)
+      FileReaderActor ! StopLearningFromFile
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
         case Success(st) => st ! StopStreamingMessage
         case Failure(ex) => println("Actor u wanna kill doesn't exist")

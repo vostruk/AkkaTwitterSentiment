@@ -16,6 +16,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
   def receive = {
     case StartLearningFromFile(fileName) =>
       val linesIteratorOption = Source.fromFile(fileName).getLines
+      println("reading from "+fileName)
       self ! ReadNextLine
 
     case ReadNextLine =>
@@ -35,5 +36,6 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
 
     case StopLearningFromFile =>
       linesIteratorOption = None
+      println("stopped reading")
   }
 }
