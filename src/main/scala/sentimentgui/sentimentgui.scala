@@ -54,6 +54,9 @@ import akka.actor.SupervisorStrategy._
 import akka.routing.{RoundRobinGroup, RoundRobinPool}
 import classify.Main.categoriesRepository
 
+import java.util.concurrent._
+import java.util.Timer
+
 import scala.concurrent.duration._
 
 object sentimentgui extends JFXApp {
@@ -92,6 +95,8 @@ object sentimentgui extends JFXApp {
   routerActor ! SetWorkersNumber(3)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
+  //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
+
   def getclassifiedDataFromActor() = {
 
     //"2017-03-31"
@@ -160,6 +165,7 @@ object sentimentgui extends JFXApp {
 
     //   sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
     //  }
+    println(MP)
     val sampleInput = List(
       sampleAngerList.toList,
       sampleDisgustList.toList,
@@ -167,6 +173,7 @@ object sentimentgui extends JFXApp {
       sampleHappinesList.toList,
       sampleSadnessList.toList,
       sampleSurpriseList.toList)
+    println(sampleInput)
     return sampleInput
   }
 
@@ -424,7 +431,7 @@ object sentimentgui extends JFXApp {
 
   }
 
-  val sliderInput = new Slider(1.0,3.0,2.0) {
+  val sliderInput = new Slider(0.0,3.0,0.0) {
     onMouseReleased = { ae =>
       scopeField.text = value.value.toInt.toString
       //scopeField.text = dhComboBox.value.toString
@@ -434,7 +441,7 @@ object sentimentgui extends JFXApp {
 
   val scopeField = new TextField{
     disable = true
-    text = "2"
+    text = "1"
     maxWidth = 40
   }
 
@@ -605,16 +612,30 @@ object sentimentgui extends JFXApp {
     maxWidth = 30
   }
 
-  abstract class QualityIn
-  case class GuiUpdateQuality(input :String) extends QualityIn
-  class ShowClassificationQualityActor extends Actor {
+//  abstract class QualityIn
+//  case class GuiUpdateQuality(input :String) extends QualityIn
+//  class ShowClassificationQualityActor extends Actor {
+//
+//    override def receive = {
+//      case GuiUpdateQuality(inputString :String) =>
+//        setQualityField(inputString)
+//    }
+//  }
+//  val cq = system.actorOf(Props(new ShowClassificationQualityActor()))
 
-    override def receive = {
-      case GuiUpdateQuality(inputString :String) =>
-        setQualityField(inputString)
+
+  val executor = new ScheduledThreadPoolExecutor(1)
+  val task = new Runnable {
+    def run() = {
+      //implicit val timeout = Timeout(5 seconds)
+      //val future = TestingActor ? GetAccuracy
+      //val result = Await.result(future, timeout.duration).asInstanceOf[String]
+      //println(result)
+      //setQualityField(result.toString())
     }
   }
-  val cq = system.actorOf(Props(new ShowClassificationQualityActor()))
+  val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
+  sched.cancel(false)
 
 
   stage = new JFXApp.PrimaryStage {
