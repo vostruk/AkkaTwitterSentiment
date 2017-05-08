@@ -166,13 +166,18 @@ object sentimentgui extends JFXApp {
     //   sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
     //  }
     println(MP)
-    val sampleInput = List(
+    var sampleInput = List(
       sampleAngerList.toList,
       sampleDisgustList.toList,
       sampleFearList.toList,
       sampleHappinesList.toList,
       sampleSadnessList.toList,
       sampleSurpriseList.toList)
+    println(sampleInput)
+
+    if (sampleInput(0).isEmpty){
+      sampleInput = List( List(0.0),List(0.0),List(0.0),List(0.0),List(0.0),List(0.0))
+    }
     println(sampleInput)
     return sampleInput
   }
@@ -362,6 +367,7 @@ object sentimentgui extends JFXApp {
 
   val hashtagConfirm = new Button {
     text = "Ok"
+    disable = true
     onAction = { ae =>
       getclassifiedDataFromActor()
       refreshGui()
@@ -369,8 +375,11 @@ object sentimentgui extends JFXApp {
   }
 
   val loadDataConfirm = new Button {
-    text = "TrainOnline"
+    text = "Train Online"
     onAction = { ae =>
+      disable = true
+      resetModelConfirm.disable = true
+      hashtagConfirm.disable = true
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }
@@ -520,6 +529,7 @@ object sentimentgui extends JFXApp {
   val resetModelConfirm = new Button {
     text = "Reset"
     onAction = { ae =>
+        hashtagConfirm.disable = true
         println("Clearing trained model.")
         categoriesRepository ! ClearTrainedModel
         //cq ! GuiUpdateQuality("test")
@@ -528,7 +538,12 @@ object sentimentgui extends JFXApp {
 
   val holdTrainingConfirm = new Button {
     text = "Hold"
+    //disable = true
     onAction = { ae =>
+      hashtagConfirm.disable = false
+      resetModelConfirm.disable = false
+      loadDataConfirm.disable = false
+
       implicit val timeout = Timeout(50 seconds)
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
         case Success(st) => st ! StopStreamingMessage
