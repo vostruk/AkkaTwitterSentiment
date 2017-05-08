@@ -395,8 +395,10 @@ object sentimentgui extends JFXApp {
     text = "Train Online"
     onAction = { ae =>
       disable = true
-      resetModelConfirm.disable = true
-      hashtagConfirm.disable = true
+      resetModelConfirm.setDisable(true)
+      hashtagConfirm.setDisable(true)
+      fileLearningConfirm.setDisable(true)
+      fileTestingConfirm.setDisable(true)
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }
@@ -503,6 +505,10 @@ object sentimentgui extends JFXApp {
 //      if (file != null) {
 //       //process it
 //      }
+      resetModelConfirm.setDisable(true)
+      hashtagConfirm.setDisable(true)
+      //disable = true
+
       FileReaderActor ! StartLearningFromFile("textTweets.txt") // other file ?
 
     }
@@ -511,6 +517,13 @@ object sentimentgui extends JFXApp {
   val fileTestingConfirm = new Button {
     text = "Test"
     onAction = { ae =>
+      resetModelConfirm.setDisable(true)
+      hashtagConfirm.setDisable(true)
+      //disable = true
+      //loadDataConfirm.setDisable(true)
+
+
+
 
       //Testing actor do something
 
@@ -559,7 +572,7 @@ object sentimentgui extends JFXApp {
   val resetModelConfirm = new Button {
     text = "Reset"
     onAction = { ae =>
-        hashtagConfirm.disable = true
+        hashtagConfirm.setDisable(true)
         println("Clearing trained model.")
         categoriesRepository ! ClearTrainedModel
         //cq ! GuiUpdateQuality("test")
@@ -570,9 +583,11 @@ object sentimentgui extends JFXApp {
     text = "Hold"
     //disable = true
     onAction = { ae =>
-      hashtagConfirm.disable = false
-      resetModelConfirm.disable = false
-      loadDataConfirm.disable = false
+      hashtagConfirm.setDisable(false)
+      resetModelConfirm.setDisable(false)
+      loadDataConfirm.setDisable(false)
+      fileLearningConfirm.setDisable(false)
+      fileTestingConfirm.setDisable(false)
 
       implicit val timeout = Timeout(50 seconds)
       FileReaderActor ! StopLearningFromFile
