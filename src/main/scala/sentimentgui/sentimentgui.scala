@@ -397,10 +397,21 @@ object sentimentgui extends JFXApp {
       disable = true
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
-      fileLearningConfirm.setDisable(true)
-      fileTestingConfirm.setDisable(true)
+      disableLearningConfirm()
+      disableTestingConfirm()
+      enableHoldLearningConfirm()
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
+  }
+
+  def disableTestingConfirm(): Unit ={
+    fileTestingConfirm.setDisable(true)
+  }
+  def disableLearningConfirm(): Unit ={
+    fileLearningConfirm.setDisable(true)
+  }
+  def enableHoldLearningConfirm(): Unit ={
+    holdTrainingConfirm.setDisable(false)
   }
 
   val hashtagInput = new TextField{
@@ -507,8 +518,10 @@ object sentimentgui extends JFXApp {
 //      }
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
-      //disable = true
-
+      disable = true
+      loadDataConfirm.setDisable(true)
+      disableTestingConfirm()
+      enableHoldLearningConfirm()
       FileReaderActor ! StartLearningFromFile("textTweets.txt") // other file ?
 
     }
@@ -519,8 +532,10 @@ object sentimentgui extends JFXApp {
     onAction = { ae =>
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
-      //disable = true
-      //loadDataConfirm.setDisable(true)
+      disable = true
+      loadDataConfirm.setDisable(true)
+      disableLearningConfirm()
+      enableHoldLearningConfirm()
 
 
 
@@ -530,6 +545,7 @@ object sentimentgui extends JFXApp {
 
     }
   }
+
 
   val CKeyInput = new TextField{
     text = "9DZO2bQPgmXO4r2eML5yVE7tb"
@@ -581,13 +597,15 @@ object sentimentgui extends JFXApp {
 
   val holdTrainingConfirm = new Button {
     text = "Hold"
-    //disable = true
+    disable = true
     onAction = { ae =>
       hashtagConfirm.setDisable(false)
       resetModelConfirm.setDisable(false)
       loadDataConfirm.setDisable(false)
       fileLearningConfirm.setDisable(false)
       fileTestingConfirm.setDisable(false)
+      disable = true
+
 
       implicit val timeout = Timeout(50 seconds)
       FileReaderActor ! StopLearningFromFile
