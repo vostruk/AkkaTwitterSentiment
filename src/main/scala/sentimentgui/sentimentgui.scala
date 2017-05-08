@@ -494,8 +494,8 @@ object sentimentgui extends JFXApp {
   inputFileChooser.extensionFilters ++= Seq(
     new ExtensionFilter("Text Files", "*.txt"))
 
-  val fileConfirm = new Button {
-    text = "File"
+  val fileLearningConfirm = new Button {
+    text = "Learn"
     onAction = { ae =>
       var file = inputFileChooser.showOpenDialog(stage)
       if (file != null) {
@@ -503,6 +503,17 @@ object sentimentgui extends JFXApp {
       }
     }
   }
+
+  val fileTestingConfirm = new Button {
+    text = "Test"
+    onAction = { ae =>
+      var file = inputFileChooser.showOpenDialog(stage)
+      if (file != null) {
+        //process it
+      }
+    }
+  }
+
   val CKeyInput = new TextField{
     text = "9DZO2bQPgmXO4r2eML5yVE7tb"
     minWidth = 400
@@ -602,7 +613,7 @@ object sentimentgui extends JFXApp {
   }
 
   val setParamsButton = new Button {
-    text = "Set"
+    text = "Set advanced options"
     onAction = { ae =>
       //println("parameters set")
 
@@ -643,12 +654,13 @@ object sentimentgui extends JFXApp {
       new Text("n-grams:"),
       ngramInput,
       pseudoOrFreqInputLabel,
-      pseudoOrFreqInput,
-      setParamsButton
+      pseudoOrFreqInput
+
     ),
       new HBox(5,
         new Text("Number of workers: "),
-        numberOfWorkersInput
+        numberOfWorkersInput,
+        setParamsButton
       )
     )
   )
@@ -708,7 +720,9 @@ object sentimentgui extends JFXApp {
           resetModelConfirm,
           loadDataConfirm,
           holdTrainingConfirm,
-          fileConfirm,
+          new Text("files:"),
+          fileLearningConfirm,
+          fileTestingConfirm,
           new Text("Quality:"),
           clasifierQualityField
         ),
