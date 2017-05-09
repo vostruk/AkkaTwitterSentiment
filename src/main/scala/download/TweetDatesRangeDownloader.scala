@@ -93,12 +93,19 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
     implicit val formats = DefaultFormats
     val parsedJson = Json.parse(jsonRes.toString)
+    try
+    {
+       val value1 = parsedJson \ "search_metadata" \ "next_results"
 
-    val value1 = parsedJson \ "search_metadata" \ "next_results"
+      println (value1.as[String])//.map(_.as[String]).lift(1))
 
-    println (value1.as[String])//.map(_.as[String]).lift(1))
+      //search(num - 1, value1.as[String])
+    }
+    catch
+      {
+        case _: Throwable => println("No more values for those days!")
+      }
 
-    //search(num - 1, value1.as[String])
   }
 
   def encodeFirstQuery(keywords: String, dateFrom: String, dateTo: String): String = {
