@@ -138,7 +138,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
         val c = category.get
         val d = dateTweet._1
         val t = dateTweet._2
-
+        println(c)
         val date = sf.parse(d.toString())
         val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
         //println(dayMonth)

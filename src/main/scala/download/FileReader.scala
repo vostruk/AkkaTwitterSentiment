@@ -15,13 +15,13 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
 
   def receive = {
     case StartLearningFromFile(fileName) =>
-      val linesIteratorOption = Source.fromFile(fileName).getLines
+      linesIteratorOption = Some(Source.fromFile(fileName).getLines)
       println("reading from "+fileName)
       self ! ReadNextLine
 
     case ReadNextLine =>
       linesIteratorOption match {
-        case None => Unit
+        case None => self ! StopLearningFromFile
         case Some(linesIterator) =>
           if (linesIterator.hasNext) {
             val line = linesIterator.next()

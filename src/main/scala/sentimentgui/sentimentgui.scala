@@ -98,7 +98,7 @@ object sentimentgui extends JFXApp {
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
   //val TestingActorInstance = system.actorOf(Props(new TestingActor("inputTest.txt",routerActor)))
-  FileReaderActor ! StartLearningFromFile("categories_init_learn.txt")
+  //FileReaderActor ! StartLearningFromFile("categories_init_learn.txt")
 
   def getclassifiedDataFromActor() = {
 
@@ -528,7 +528,7 @@ object sentimentgui extends JFXApp {
       loadDataConfirm.setDisable(true)
       disableTestingConfirm()
       enableHoldLearningConfirm()
-      FileReaderActor ! StartLearningFromFile("textTweets.txt") // other file ?
+      FileReaderActor ! StartLearningFromFile("emoTweets_test.txt") // other file ?
 
     }
   }
