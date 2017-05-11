@@ -21,8 +21,8 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
   var naiveBayesModelOption: Option[ActorRef] = None
   var evaluationRunning = false
   var evaluationRoundInProgress = false
-  var accuracy = 0
-  var correctDecisions = 0
+  var accuracy: Double = 0
+  var correctDecisions: Double = 0
   var receivedDecisions = 0
   var testLabels: List[String] = List[String]()
   var testDocuments: List[String] = List[String]()
