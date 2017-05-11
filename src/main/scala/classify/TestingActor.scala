@@ -13,9 +13,10 @@ case object EvaluateModel
 case object StartEvaluatingModel
 case object StopEvaluatingModel
 case object GetAccuracy
+case class SetTestDataFile(testDataFile: java.io.File)
 
 
-class TestingActor(testDataFileName: String, naiveBayesModelRouterActor: ActorRef) extends Actor {
+class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
   implicit val duration: Timeout = 100 seconds;
   var naiveBayesModelOption: Option[ActorRef] = None
   var evaluationRunning = false
@@ -23,16 +24,19 @@ class TestingActor(testDataFileName: String, naiveBayesModelRouterActor: ActorRe
   var accuracy = 0
   var correctDecisions = 0
   var receivedDecisions = 0
+  var testLabels: List[String] = List[String]()
+  var testDocuments: List[String] = List[String]()
 
-  val (testLabels, testDocuments) = {
-    val source = scala.io.Source.fromFile(testDataFileName)
-    val inputText = try source.mkString.toLowerCase finally source.close()
-    val lines = inputText.toLowerCase.split("\n").map(_.split("\t", 2))
-    lines.map((line) => (line(0), line(1))).toList.unzip
-  }
 
   override def receive = {
-    case StartEvaluatingModel =>
+    case SetTestDataFile(testDataFile) =>
+      val source = scala.io.Source.fromFile(testDataFile.getAbsolutePath)
+      val inputText = try source.mkString.toLowerCase finally source.close()
+      val lines = inputText.toLowerCase.split("\n").map(_.split("\t", 2)).toList
+      testLabels = lines.map(_(0))
+      testDocuments = lines.map(_(1))
+
+    case StartEvaluatingModel if testDocuments.nonEmpty =>
       evaluationRunning = true
       self ! EvaluateModel
     case StopEvaluatingModel =>

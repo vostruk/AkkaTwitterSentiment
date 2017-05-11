@@ -45,11 +45,12 @@ object Main extends App {
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(10)
-  val testingActor = system.actorOf(Props(new TestingActor("newsgroups_dataset.txt", routerActor)))
+  val testingActor = system.actorOf(Props(new TestingActor(routerActor)))
   val printer = system.actorOf(Props(new Printer(testingActor)))
   val learner = system.actorOf(Props(new Learner(routerActor)))
 
   printer ! PingMessage
+  testingActor ! SetTestDataFile(new java.io.File("newsgroups_dataset.txt"))
   testingActor ! StartEvaluatingModel
   learner ! PingMessage
   Thread.sleep(15000)
