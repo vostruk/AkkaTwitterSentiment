@@ -66,6 +66,6 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
         evaluationRoundInProgress = false
       }
     case GetAccuracy =>
-      sender ! accuracy
+      sender ! accuracy.toString
   }
 }

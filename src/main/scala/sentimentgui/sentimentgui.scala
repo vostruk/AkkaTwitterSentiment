@@ -97,7 +97,7 @@ object sentimentgui extends JFXApp {
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
-  //val TestingActorInstance = system.actorOf(Props(new TestingActor("inputTest.txt",routerActor)))
+  val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)))
   //FileReaderActor ! StartLearningFromFile("categories_init_learn.txt")
 
   def getclassifiedDataFromActor() = {
@@ -514,6 +514,8 @@ object sentimentgui extends JFXApp {
   inputFileChooser.setTitle("Learn from a file")
   inputFileChooser.extensionFilters ++= Seq(
     new ExtensionFilter("Text Files", "*.txt"))
+  val defaultDirectory = new java.io.File(".")
+  inputFileChooser.setInitialDirectory(defaultDirectory)
 
   val fileLearningConfirm = new Button {
     text = "Learn"
@@ -543,11 +545,12 @@ object sentimentgui extends JFXApp {
       disableLearningConfirm()
       enableHoldLearningConfirm()
 
-
-
-
-      //Testing actor do something
-
+            var file = inputFileChooser.showOpenDialog(stage)
+            if (file != null) {
+              //println("fileok")
+              TestingActorInstance ! SetTestDataFile(file)
+              TestingActorInstance ! StartEvaluatingModel
+            }
 
     }
   }
@@ -614,6 +617,7 @@ object sentimentgui extends JFXApp {
 
 
       implicit val timeout = Timeout(50 seconds)
+      TestingActorInstance ! StopEvaluatingModel
       FileReaderActor ! StopLearningFromFile
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
         case Success(st) => st ! StopStreamingMessage
@@ -731,15 +735,15 @@ object sentimentgui extends JFXApp {
   val executor = new ScheduledThreadPoolExecutor(1)
   val task = new Runnable {
     def run() = {
-      //implicit val timeout = Timeout(5 seconds)
-      //val future = TestingActor ? GetAccuracy
-      //val result = Await.result(future, timeout.duration).asInstanceOf[String]
+      implicit val timeout = Timeout(5 seconds)
+      val future = TestingActorInstance ? GetAccuracy
+      var result = Await.result(future, timeout.duration).asInstanceOf[String]
       //println(result)
-      //setQualityField(result.toString())
+      setQualityField(result)
     }
   }
   val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
-  sched.cancel(false)
+//  //sched.cancel(false)
 
 
   stage = new JFXApp.PrimaryStage {
