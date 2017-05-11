@@ -399,8 +399,8 @@ object sentimentgui extends JFXApp {
       disable = true
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
-      disableLearningConfirm()
-      disableTestingConfirm()
+      //disableLearningConfirm()
+      //disableTestingConfirm()
       enableHoldLearningConfirm()
 
       val ct = ConsumerToken( getCKeyFromInput(), getCSecretFromInput())
@@ -527,10 +527,16 @@ object sentimentgui extends JFXApp {
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
       disable = true
-      loadDataConfirm.setDisable(true)
-      disableTestingConfirm()
+      //loadDataConfirm.setDisable(true)
+      //disableTestingConfirm()
       enableHoldLearningConfirm()
-      FileReaderActor ! StartLearningFromFile("emoTweets_test.txt") // other file ?
+
+      var file = inputFileChooser.showOpenDialog(stage)
+      if (file != null) {
+        //println("fileok")
+        FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
+      }
+
 
     }
   }
@@ -541,8 +547,8 @@ object sentimentgui extends JFXApp {
       resetModelConfirm.setDisable(true)
       hashtagConfirm.setDisable(true)
       disable = true
-      loadDataConfirm.setDisable(true)
-      disableLearningConfirm()
+      //loadDataConfirm.setDisable(true)
+      //disableLearningConfirm()
       enableHoldLearningConfirm()
 
             var file = inputFileChooser.showOpenDialog(stage)
@@ -717,7 +723,7 @@ object sentimentgui extends JFXApp {
   val clasifierQualityField = new TextField{
     disable = true
     text = "0"
-    maxWidth = 30
+    maxWidth = 60
   }
 
 //  abstract class QualityIn
@@ -768,12 +774,15 @@ object sentimentgui extends JFXApp {
           resetModelConfirm,
           loadDataConfirm,
           holdTrainingConfirm,
-          new Text("files:"),
+          new Text("Files:"),
           fileLearningConfirm,
-          fileTestingConfirm,
-          new Text("Quality:"),
-          clasifierQualityField
+          fileTestingConfirm
         ),
+        new HBox(10,
+          new Text("Quality of classification:"),
+          clasifierQualityField
+        )
+        ,
         advancedClasifierOptionsTitledPane,
         new HBox(20,
           new Text("Hashtag :"),
