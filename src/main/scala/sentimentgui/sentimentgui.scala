@@ -307,15 +307,23 @@ object sentimentgui extends JFXApp {
 
   def isAllDigits(x: String) = x forall Character.isDigit
   def getPseudocountFromInput () : Double ={
-    val s = pseudoOrFreqInput.getText()
-    if (isAllDigits(s)){
-      val t = s.toDouble
-      if (t<=0) {new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0}
-      return t
-    }
-    else{
-      new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()
-      return -1.0
+    try {
+      val s = pseudoOrFreqInput.getText()
+      //if (isAllDigits(s)) {
+        val t = s.toDouble
+        if (t <= 0) {
+          new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0
+        }
+        //println(t)
+        return t
+//      }
+//      else {
+//        new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()
+//        return -1.0
+//      }
+    } catch {
+      case ex :NumberFormatException =>
+        new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0
     }
 
   }
