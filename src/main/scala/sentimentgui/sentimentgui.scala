@@ -59,6 +59,11 @@ import java.util.Timer
 
 import scala.concurrent.duration._
 
+import java.io.PrintWriter
+import scala.io.Source
+
+
+
 object sentimentgui extends JFXApp {
 
   def getCKeyFromInput () : String ={
@@ -74,6 +79,43 @@ object sentimentgui extends JFXApp {
     return ASecretInput.getText()
   }
 
+  def setCKeyInInput (in : String) : Unit ={
+    CKeyInput.text = in
+  }
+  def setCSecretInInput (in : String) : Unit ={
+    CSecretInput.text = in
+  }
+  def setATokenInInput (in : String) : Unit ={
+    ATokenInput.text = in
+  }
+  def setASecretInInput (in : String) : Unit ={
+    ASecretInput.text = in
+  }
+
+  class authKey {
+    var CKey : String = "-"
+    var CSecret : String = "-"
+    var AToken : String = "-"
+    var ASecret : String = "-"
+
+    def setKeys(ck : String, cs : String, at : String, as : String){
+      this.CKey = ck
+      this.CSecret = cs
+      this.AToken = at
+      this.ASecret = as
+    }
+    def print(): String ={
+     val s = this.CKey + "\t"+ this.CSecret + "\t" + this.AToken + "\t" + this.ASecret + "\n"
+//      println(this.CKey)
+//      println(this.CSecret)
+//        println(this.AToken)
+//        println(this.ASecret)
+      return s
+    }
+  }
+  var authList = new ListBuffer[authKey]()
+
+
   val system = ActorSystem("DownloadSystem")
 
   //================================ACTORS here =======================
@@ -82,6 +124,9 @@ object sentimentgui extends JFXApp {
   val CSecret = "XgYcclHj3WPIvRa8GAzxNCT630D7yPW7ywxlcsDNguq7G0AUSW"; //getCSecretFromInput() //
   val AToken =  "1147364532-UY07fDELfbBmIY6D1Fghf80BEO28ik683MKYry0"; //getATokenFromInput() //
   val ASecret = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x"; //getASecretFromInput() //
+  authList += new authKey()
+  authList(0).setKeys(CKey,CSecret,AToken,ASecret)
+  var defaultAuthList = authList
 
   val consumerToken = ConsumerToken( CKey, CSecret)
   val accessToken = AccessToken(AToken, ASecret)
@@ -387,7 +432,7 @@ object sentimentgui extends JFXApp {
     text = "Ok"
     disable = true
     onAction = { ae =>
-      TweetDatesRangeDownloaderActor ! SetUserKeysDownloader(getCKeyFromInput(),getCSecretFromInput(),getATokenFromInput(),getASecretFromInput())
+      TweetDatesRangeDownloaderActor ! SetUserKeysDownloader(authList(0).CKey,authList(0).CSecret,authList(0).AToken,authList(0).ASecret)
       getclassifiedDataFromActor()
       refreshGui()
     }
@@ -403,8 +448,8 @@ object sentimentgui extends JFXApp {
       //disableTestingConfirm()
       enableHoldLearningConfirm()
 
-      val ct = ConsumerToken( getCKeyFromInput(), getCSecretFromInput())
-      val at = AccessToken(getATokenFromInput(), getASecretFromInput())
+      val ct = ConsumerToken( authList(0).CKey, authList(0).CSecret)
+      val at = AccessToken(authList(0).AToken, authList(0).ASecret)
       streamActor ! SetUserKeys(ct,at)
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
@@ -578,8 +623,171 @@ object sentimentgui extends JFXApp {
     text = "lLOedCO9h9Zfqym41xAk9RR0r2erO4YgNVLKY0SXp0x5x"
     minWidth = 400
   }
+
+  var selectedKey = 0
+
+  val currentKeyField = new TextField{
+    disable = true
+    text = (selectedKey+1).toString + " of " + authList.size.toString
+    maxWidth = 60
+  }
+  def refreshKeyField(): Unit ={
+    currentKeyField.text = (selectedKey+1).toString + " of " + authList.size.toString
+  }
+  def showCurrentKey(current : Int): Unit ={
+    setCKeyInInput(authList(selectedKey).CKey)
+    setCSecretInInput(authList(selectedKey).CSecret)
+    setATokenInInput(authList(selectedKey).AToken)
+    setASecretInInput(authList(selectedKey).ASecret)
+  }
+
+
+  val prevKeyButton = new Button {
+    text = "Previous"
+    onAction = { ae =>
+      if (selectedKey>0){
+        selectedKey = selectedKey -1
+      }
+      showCurrentKey(selectedKey)
+      refreshKeyField()
+    }
+  }
+
+  val nextKeyButton = new Button {
+    text = "Next"
+    onAction = { ae =>
+      if (selectedKey+1<authList.size){
+        selectedKey = selectedKey +1
+      }
+      showCurrentKey(selectedKey)
+      refreshKeyField()
+    }
+  }
+
+  val addKeyButton = new Button {
+    text = "Add"
+    onAction = { ae =>
+      authList += new authKey()
+      refreshKeyField()
+    }
+  }
+
+  val setKeyButton = new Button {
+    text = "Set"
+    onAction = { ae =>
+      authList(selectedKey).setKeys(getCKeyFromInput(),getCSecretFromInput(),getATokenFromInput(),getASecretFromInput())
+    }
+  }
+
+  val delKeyButton = new Button {
+    text = "Delete"
+    onAction = { ae =>
+      if (authList.size != 1){
+      authList.remove(selectedKey)
+      if (selectedKey==authList.size){
+        selectedKey = selectedKey -1
+      }
+      showCurrentKey(selectedKey)
+      refreshKeyField()
+    }
+    }
+  }
+
+  val saveKeyButton = new Button {
+    text = "Save"
+    onAction = { ae =>
+      new PrintWriter("keysConfig.txt") {
+//        write(authList(0).print())
+        for (el <- authList){
+          write(el.print())
+        }
+        close
+      }
+
+    }
+  }
+
+  val loadKeyButton = new Button {
+    text = "Load"
+    onAction = { ae =>
+      val source = Source.fromFile("keysConfig.txt")
+
+      val inputText = try source.mkString finally source.close()
+      try {
+        val lines = inputText.split("\n").map(_.split("\t", 4)).toList
+        val cks = lines.map(_ (0))
+        val css = lines.map(_ (1))
+        val ats = lines.map(_ (2))
+        val ass = lines.map(_ (3))
+     if (cks.size == css.size && css.size == ats.size && ats.size == ass.size ){
+          println(cks)
+          println(css)
+          println(ats)
+          println(ass)
+          println (ass.size)
+       authList = new ListBuffer[authKey]()
+       var it = 0
+       for (key<- cks){
+         authList += new authKey()
+         authList(it).CKey = key
+         it = it + 1
+       }
+       it = 0
+       for (key<- css){
+         authList(it).CSecret = key
+         it = it + 1
+       }
+       it = 0
+       for (key<- ats){
+         authList(it).AToken = key
+         it = it + 1
+       }
+       it = 0
+       for (key<- ass){
+         authList(it).ASecret = key
+         it = it + 1
+       }
+       it = 0
+       selectedKey = 0
+       showCurrentKey(selectedKey)
+       refreshKeyField()
+        }else
+        {
+          authList = defaultAuthList
+          selectedKey = 0
+          showCurrentKey(selectedKey)
+          refreshKeyField()
+          new Alert(AlertType.INFORMATION, "keyCofing file has incorrect format. Setting default keys").showAndWait()
+        }
+      } catch{
+        case ex :ArrayIndexOutOfBoundsException=>
+          authList = defaultAuthList
+          selectedKey = 0
+          showCurrentKey(selectedKey)
+          refreshKeyField()
+          new Alert(AlertType.INFORMATION, "keyCofing file has incorrect format!\n" +ex.toString).showAndWait()
+      }
+
+//      val lines = source.mkString
+//      println (lines.split("\n"))
+
+    }
+  }
+
+
+
   val keyTitledPane = new TitledPane("API keys",
     new VBox(0,
+      new HBox(10,
+        prevKeyButton,
+        currentKeyField,
+        nextKeyButton,
+        addKeyButton,
+        setKeyButton,
+        delKeyButton,
+        saveKeyButton,
+        loadKeyButton
+      ),
       new HBox(10,
         new Text("    CKey :"),
         CKeyInput
@@ -725,6 +933,12 @@ object sentimentgui extends JFXApp {
     text = "0"
     maxWidth = 60
   }
+
+
+
+
+
+
 
 //  abstract class QualityIn
 //  case class GuiUpdateQuality(input :String) extends QualityIn
