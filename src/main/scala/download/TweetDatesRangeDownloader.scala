@@ -35,7 +35,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
   var consumer = new CommonsHttpOAuthConsumer(ConsumerKey, ConsumerSecret);
   consumer.setTokenWithSecret(AccessToken, AccessSecret);
-  val DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
+  var DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
   class CC[T] {
     def unapply(a: Any): Option[T] = Some(a.asInstanceOf[T])
   }
@@ -124,6 +124,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
   def receive = {
     case (q: String, f: String, t: String) => {
+      DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
       search(8, encodeFirstQuery(q, f, t))
     }
     case GetDateToStatMessage => {
