@@ -155,6 +155,7 @@ object sentimentgui extends JFXApp {
     val fr = dfr.getYear().toString()+"-"+dfr.getMonthValue().toString()+"-"+dfr.getDayOfMonth().toString()//"2017-04-20"
     val t =  dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()//"2017-04-24"
 
+    TweetDatesRangeDownloaderActor ! (getHashtagFromInput(), fr, t)
   }
 
   def castMapToList(MP: scala.collection.mutable.Map[String, Map[String, Int]], range: Double): List[List[Double]]= {
