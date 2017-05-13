@@ -61,11 +61,11 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       if (!actorOnHold) {
         val emoji = filterEmoji(tweet.text)
         if (emoji != "None" && emoji != "Many") {
-          receiver ! DocumentCategoryMessage(tweet.text.replace('\n', ' ').replace('\t', ' ')+"\n"), emoji)
-          new PrintWriter(new FileOutputStream(new File("TweetsFromStreamerCategorized.txt"),true))
-          {
-            write(emoji+"\t"+tweet.text.replace('\n', ' ').replace('\t', ' ')+"\n"); close
-          }
+          receiver ! DocumentCategoryMessage(tweet.text.replace('\n', ' ').replace('\t', ' '), emoji)
+        //  new PrintWriter(new FileOutputStream(new File("TweetsFromStreamerCategorized.txt"),true))
+        //  {
+        //    write(emoji+"\t"+tweet.text.replace('\n', ' ').replace('\t', ' ')+"\n"); close
+        //  }
            countReceived = countReceived + 1
         }
       }
