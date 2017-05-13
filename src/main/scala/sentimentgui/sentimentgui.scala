@@ -447,7 +447,7 @@ object sentimentgui extends JFXApp {
     onAction = { ae =>
       disable = true
       resetModelConfirm.setDisable(true)
-      hashtagConfirm.setDisable(true)
+      hashtagConfirm.setDisable(false)
       //disableLearningConfirm()
       //disableTestingConfirm()
       enableHoldLearningConfirm()
@@ -574,8 +574,8 @@ object sentimentgui extends JFXApp {
 //       //process it
 //      }
       resetModelConfirm.setDisable(true)
-      hashtagConfirm.setDisable(true)
-      disable = true
+      //hashtagConfirm.setDisable(true)
+      //disable = true
       //loadDataConfirm.setDisable(true)
       //disableTestingConfirm()
       enableHoldLearningConfirm()
@@ -585,7 +585,7 @@ object sentimentgui extends JFXApp {
         //println("fileok")
         FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
       }
-
+      hashtagConfirm.setDisable(false)
 
     }
   }
@@ -594,8 +594,8 @@ object sentimentgui extends JFXApp {
     text = "Test"
     onAction = { ae =>
       resetModelConfirm.setDisable(true)
-      hashtagConfirm.setDisable(true)
-      disable = true
+      //hashtagConfirm.setDisable(false)
+      //disable = true
       //loadDataConfirm.setDisable(true)
       //disableLearningConfirm()
       enableHoldLearningConfirm()
@@ -835,7 +835,7 @@ object sentimentgui extends JFXApp {
 
 
       implicit val timeout = Timeout(50 seconds)
-      TestingActorInstance ! StopEvaluatingModel
+      //TestingActorInstance ! StopEvaluatingModel
       FileReaderActor ! StopLearningFromFile
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
         case Success(st) => st ! StopStreamingMessage
