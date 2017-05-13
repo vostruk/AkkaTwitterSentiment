@@ -3,14 +3,15 @@ package download
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Locale
 
 import akka.pattern.ask
 
 import scala.concurrent.duration._
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Props, PoisonPill, Actor, ActorRef}
 import akka.util.Timeout
-import classify.{CategoryMessage, ClassifyDocumentMessage, DocumentCategoryMessage}
+import classify.{NaiveBayesModelActor, CategoryMessage, ClassifyDocumentMessage, DocumentCategoryMessage}
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer
 import org.apache.commons.io.IOUtils
 import org.apache.http.client.methods.HttpGet
@@ -30,12 +31,65 @@ import scala.util.parsing.json.JSON
   */
 case object GetDateToStatMessage
 case class SetUserKeysDownloader(ck: String, cs: String, at: String, as: String)
+case class SetRange(from: LocalDate, To: LocalDate)
+case class AnalyseTweetsForHashtag(ht:String)
+case class CountCategoryMessage(c:String, dm:String)
 
-class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, AccessToken: String, AccessSecret: String, naiveBayesActor: ActorRef) extends Actor {
+class RangeDownloaderRouterActor (routerActor: ActorRef) extends Actor {
 
-  var consumer = new CommonsHttpOAuthConsumer(ConsumerKey, ConsumerSecret);
-  consumer.setTokenWithSecret(AccessToken, AccessSecret);
+  var RangeDownloadActors = mutable.Set[ActorRef]()
   var DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
+
+  override def receive = {
+    case SetRange(f, t) =>
+      //uwaga - nie zadziala dla konca roku
+    {
+      var from = f
+      RangeDownloadActors.foreach(a => a ! PoisonPill)
+      RangeDownloadActors.clear()
+      while (!from.isAfter(t))
+        {
+          val newActor = context.actorOf(Props(new TweetDatesRangeDownloader(routerActor, self)))
+          newActor ! SetRange(from, from.plusDays(1))
+          RangeDownloadActors.add(newActor)
+          from = from.plusDays(1)
+        }
+    }
+
+    case message@AnalyseTweetsForHashtag(_) => {
+      DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
+      RangeDownloadActors.foreach(_ ! message)
+    }
+    case SetUserKeysDownloader(ck: String, cs: String, at: String, as: String) => {
+      for (ac <- RangeDownloadActors)
+        ac ! SetUserKeysDownloader(ck, cs, at, as)
+    }
+    case GetDateToStatMessage => {
+      sender ! DateToStat
+    }
+    case CountCategoryMessage(c: String, dayMonth:String) =>{
+      if(c != null) {
+
+        if(!DateToStat.contains(c))
+        {DateToStat(c) = Map[String, Int](); println("Set new emoji to map!!###") }
+        //if sentiment didn't exist in map will be created now
+
+        if(!DateToStat(c).contains(dayMonth))
+          DateToStat(c)(dayMonth) = 1;
+        else DateToStat(c)( dayMonth) = DateToStat(c)( dayMonth) + 1
+      }
+      else println("Ccategory is null wtf??")
+    }
+  }
+}
+
+class TweetDatesRangeDownloader(naiveBayesActor: ActorRef, myRouterActor: ActorRef) extends Actor {
+
+  var consumer: CommonsHttpOAuthConsumer = null
+  var FromRange: String = null
+  var ToRange: String = null
+ // consumer.setTokenWithSecret(AccessToken, AccessSecret);
+
   class CC[T] {
     def unapply(a: Any): Option[T] = Some(a.asInstanceOf[T])
   }
@@ -118,18 +172,18 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     val s = URLEncoder.encode(str, "UTF-8");
     val query = "?q=" + s + "&count=100&lang=en";
     println(s)
-
     query
   }
 
   def receive = {
-    case (q: String, f: String, t: String) => {
-      DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
-      search(8, encodeFirstQuery(q, f, t))
+    case SetRange(dfr, dto) => {
+      FromRange = dfr.getYear().toString()+"-"+dfr.getMonthValue().toString()+"-"+dfr.getDayOfMonth().toString()
+      ToRange = dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()
     }
-    case GetDateToStatMessage => {
-      sender ! DateToStat
+    case AnalyseTweetsForHashtag(q: String) => {
+      search(4, encodeFirstQuery(q, FromRange, ToRange))
     }
+
     case CategoryMessage(category: Option[String], dateTweet: (String, String)) => {
 
       val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
@@ -138,22 +192,12 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
         val c = category.get
         val d = dateTweet._1
         val t = dateTweet._2
-        println(c)
+
         val date = sf.parse(d.toString())
         val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
         //println(dayMonth)
 
-        if(c != null) {
-
-          if(!DateToStat.contains(c))
-          {DateToStat(c) = Map[String, Int](); println("Set new emoji to map!!###") }
-          //if sentiment didn't exist in map will be created now
-
-          if(!DateToStat(c).contains(dayMonth))
-            DateToStat(c)(dayMonth) = 1;
-          else DateToStat(c)( dayMonth) = DateToStat(c)( dayMonth) + 1
-        }
-        else println("Ccategory is null wtf??")
+      myRouterActor ! CountCategoryMessage(c, dayMonth)
 
     }
     case SetUserKeysDownloader(ck: String, cs: String, at: String, as: String) =>

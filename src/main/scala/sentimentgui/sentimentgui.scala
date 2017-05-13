@@ -141,7 +141,7 @@ object sentimentgui extends JFXApp {
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 2)
-  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
@@ -155,10 +155,9 @@ object sentimentgui extends JFXApp {
     val dfr = getDateFromInput().minusDays(scp.toLong)
     val dto = getDateFromInput().plusDays(scp.toLong)
 
-    val fr = dfr.getYear().toString()+"-"+dfr.getMonthValue().toString()+"-"+dfr.getDayOfMonth().toString()//"2017-04-20"
-    val t =  dto.getYear().toString()+"-"+dto.getMonthValue().toString()+"-"+dto.getDayOfMonth().toString()//"2017-04-24"
-
-    TweetDatesRangeDownloaderActor ! (getHashtagFromInput(), fr, t)
+    TweetDatesRangeDownloaderActor ! SetRange(dfr, dto)
+    TweetDatesRangeDownloaderActor ! SetUserKeysDownloader(authList(0).CKey,authList(0).CSecret,authList(0).AToken,authList(0).ASecret)
+    TweetDatesRangeDownloaderActor ! AnalyseTweetsForHashtag(getHashtagFromInput())
   }
 
   def castMapToList(MP: scala.collection.mutable.Map[String, Map[String, Int]], range: Double): List[List[Double]]= {
@@ -444,7 +443,6 @@ object sentimentgui extends JFXApp {
     text = "Ok"
     disable = true
     onAction = { ae =>
-      TweetDatesRangeDownloaderActor ! SetUserKeysDownloader(authList(0).CKey,authList(0).CSecret,authList(0).AToken,authList(0).ASecret)
       getclassifiedDataFromActor()
       refreshGui()
     }
