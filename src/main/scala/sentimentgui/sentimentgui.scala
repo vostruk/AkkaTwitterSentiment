@@ -231,8 +231,8 @@ object sentimentgui extends JFXApp {
   }
 
   def refreshGui(): Unit = {
-    implicit val duration: Timeout = 50 seconds
-    val ans = Await.result(TweetDatesRangeDownloaderActor ? GetDateToStatMessage, 50.seconds).asInstanceOf[scala.collection.mutable.Map[String, Map[String, Int]]]//.category.get.toString()
+    implicit val duration: Timeout = 50 seconds;
+    val statFuture = (TweetDatesRangeDownloaderActor ? GetDateToStatMessage).mapTo[scala.collection.mutable.Map[String, Map[String, Int]]]
 
     /*for ((k, v) <- ans)
     {
@@ -241,8 +241,9 @@ object sentimentgui extends JFXApp {
       println(k)
       println(vals.size)
     }*/
+    statFuture.foreach(x => loadData(castMapToList(x, getScopeFromInput()*2)))
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
-    loadData(castMapToList(ans, getScopeFromInput()*2))//genRandomData(getScopeFromInput()))
+    //genRandomData(getScopeFromInput()))
 
     if (ENABLE_PLOT){
     f.clearPlot(0)
