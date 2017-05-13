@@ -138,6 +138,7 @@ object sentimentgui extends JFXApp {
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
+  categoriesRepository ! LaplaceSmoothingModel(2, 2)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new TweetDatesRangeDownloader(CKey, CSecret, AToken, ASecret, routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
