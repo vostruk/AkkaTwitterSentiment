@@ -858,7 +858,7 @@ object sentimentgui extends JFXApp {
   }
 
   val numberOfWorkersInput = new TextField{
-    text = "4"
+    text = "3"
     maxWidth = 40
   }
 
