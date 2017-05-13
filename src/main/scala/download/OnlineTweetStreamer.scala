@@ -1,5 +1,7 @@
 package download
 
+import java.io.{File, FileOutputStream, PrintWriter}
+
 import com.danielasfregola.twitter4s.TwitterStreamingClient
 import com.danielasfregola.twitter4s.entities.Tweet
 import com.danielasfregola.twitter4s.entities.streaming.common.WarningMessage
@@ -59,8 +61,12 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
       if (!actorOnHold) {
         val emoji = filterEmoji(tweet.text)
         if (emoji != "None" && emoji != "Many") {
-          receiver ! DocumentCategoryMessage(tweet.text, emoji)
-          countReceived = countReceived + 1
+          receiver ! DocumentCategoryMessage(tweet.text.replace('\n', ' ').replace('\t', ' ')+"\n"), emoji)
+          new PrintWriter(new FileOutputStream(new File("TweetsFromStreamerCategorized.txt"),true))
+          {
+            write(emoji+"\t"+tweet.text.replace('\n', ' ').replace('\t', ' ')+"\n"); close
+          }
+           countReceived = countReceived + 1
         }
       }
     }

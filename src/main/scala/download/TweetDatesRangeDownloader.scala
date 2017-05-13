@@ -52,7 +52,6 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     if (num < 1) {
       return
     }
-
     //consumer.setTokenWithSecret(AccessToken, AccessSecret);
     val request = new HttpGet("https://api.twitter.com/1.1/search/tweets.json" + query);
     consumer.sign(request);
@@ -99,7 +98,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
       println (value1.as[String])//.map(_.as[String]).lift(1))
 
-      //search(num - 1, value1.as[String])
+      search(num - 1, value1.as[String])
     }
     catch
       {
@@ -125,7 +124,7 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
 
   def receive = {
     case (q: String, f: String, t: String) => {
-      search(1, encodeFirstQuery(q, f, t))
+      search(8, encodeFirstQuery(q, f, t))
     }
     case GetDateToStatMessage => {
       sender ! DateToStat
@@ -159,7 +158,6 @@ class TweetDatesRangeDownloader(ConsumerKey: String, ConsumerSecret: String, Acc
     case SetUserKeysDownloader(ck: String, cs: String, at: String, as: String) =>
       consumer = new CommonsHttpOAuthConsumer(ck, cs)
       consumer.setTokenWithSecret(at, as)
-
   }
 }
 
