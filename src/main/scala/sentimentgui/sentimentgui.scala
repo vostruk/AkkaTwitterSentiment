@@ -66,6 +66,8 @@ import scala.io.Source
 
 object sentimentgui extends JFXApp {
 
+  val ENABLE_PLOT = true
+
   def getCKeyFromInput () : String ={
     return CKeyInput.getText()
   }
@@ -242,6 +244,7 @@ object sentimentgui extends JFXApp {
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
     loadData(castMapToList(ans, getScopeFromInput()*2))//genRandomData(getScopeFromInput()))
 
+    if (ENABLE_PLOT){
     f.clearPlot(0)
     p = f.subplot(0)
     if (AngerCheckBox.selected()) {
@@ -268,6 +271,7 @@ object sentimentgui extends JFXApp {
     p.ylabel = "Sentiment"
     p.legend = true
     f.refresh()
+    }
   }
 
   def loadData (inputData: List[List[Double]]) : Unit = {
@@ -423,15 +427,16 @@ object sentimentgui extends JFXApp {
   //println(cal.getTime())
   var dataPairs = Seq(("Anger", 1.0), ("Disgust", 17.0), ("Fear", 25.0), ("Happines", 27.0), ("Sadness", 5.0), ("Surprise", 5.0))
   //temp
-
-
   val f = Figure("Twitter Plot")
   var p = f.subplot(0)
-  val x = linspace(0.0, 1.0)
-  p += plot(days2, sampleAnger)
-  p.xlabel = "Days"
-  p.ylabel = "Sentiment"
-
+  if (ENABLE_PLOT) {
+//    val f = Figure("Twitter Plot")
+//    var p = f.subplot(0)
+    val x = linspace(0.0, 1.0)
+    p += plot(days2, sampleAnger)
+    p.xlabel = "Days"
+    p.ylabel = "Sentiment"
+  }
  //!!@@
 
   val hashtagConfirm = new Button {
@@ -484,6 +489,7 @@ object sentimentgui extends JFXApp {
   val AngerCheckBox = new CheckBox {
     text = "Anger"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
@@ -491,6 +497,7 @@ object sentimentgui extends JFXApp {
   val DisgustCheckBox = new CheckBox {
     text = "Disgust"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
@@ -498,6 +505,7 @@ object sentimentgui extends JFXApp {
   val FearCheckBox = new CheckBox {
     text = "Fear"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
@@ -505,6 +513,7 @@ object sentimentgui extends JFXApp {
   val HappinesCheckBox = new CheckBox {
     text = "Happines"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
@@ -512,6 +521,7 @@ object sentimentgui extends JFXApp {
   val SadnessCheckBox = new CheckBox {
     text = "Sadness"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
@@ -519,6 +529,7 @@ object sentimentgui extends JFXApp {
   val SurpriseCheckBox = new CheckBox {
     text = "Surprise"
     selected = true
+    visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
     }
