@@ -770,7 +770,7 @@ object sentimentgui extends JFXApp {
           println(cks)
           println(css)
           println(ats)
-          println(ass)
+          //println(ass(0).dropRight(1)+ass(1).dropRight(1))
           println (ass.size)
        authList = new ListBuffer[authKey]()
        var it = 0
@@ -791,7 +791,7 @@ object sentimentgui extends JFXApp {
        }
        it = 0
        for (key<- ass){
-         authList(it).ASecret = key
+         authList(it).ASecret = key.dropRight(1)
          it = it + 1
        }
        it = 0
