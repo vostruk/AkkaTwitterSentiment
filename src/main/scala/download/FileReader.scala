@@ -2,6 +2,7 @@ package download
 
 import akka.actor.{Actor, ActorRef}
 import classify.DocumentCategoryMessage
+import sentimentgui.sentimentgui.guiAlert
 
 import scala.io.Source
 
@@ -11,7 +12,7 @@ case object ReadNextLine
 case object StopLearningFromFile
 case object GetLearningProgress
 
-class FileReader(naiveBayesActor: ActorRef) extends Actor {
+class FileReader(naiveBayesActor: ActorRef, GuiActorInstance : ActorRef) extends Actor {
   var linesIteratorOption: Option[Iterator[String]] = None
   var currentLine: Int = 0
   var currentFileNumberOfLines: Int = 0
@@ -37,6 +38,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
           }
           else {
             println("done")
+            GuiActorInstance ! guiAlert("Reading file is done!")
             linesIteratorOption = None
           }
       }
