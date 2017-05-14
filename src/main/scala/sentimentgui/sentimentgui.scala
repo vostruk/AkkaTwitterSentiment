@@ -355,7 +355,7 @@ object sentimentgui extends JFXApp {
     learningRateField.text = in
   }
 
-  def setTestingRateFieldField (in: String) : Unit ={
+  def setTestingRateField (in: String) : Unit ={
     testingRateField.text = in
   }
 
@@ -966,13 +966,13 @@ object sentimentgui extends JFXApp {
   val learningRateField = new TextField{
     disable = true
     text = "0"
-    maxWidth = 60
+    maxWidth = 120
   }
 
   val testingRateField = new TextField{
     disable = true
     text = "0"
-    maxWidth = 60
+    maxWidth = 120
   }
 
   case class guiSetField(input :String)
@@ -1004,12 +1004,15 @@ object sentimentgui extends JFXApp {
   val task = new Runnable {
     def run() = {
       implicit val timeout = Timeout(5 seconds)
-      var future = TestingActorInstance ? GetAccuracy
+      val future = TestingActorInstance ? GetAccuracy
       var result = Await.result(future, timeout.duration).asInstanceOf[String]
-      //println(result)
       setQualityField(result)
 
-      //future = routerActor ? GetProcessingRates
+      val f2 = routerActor ? GetProcessingRates
+      val r2 = Await.result(f2, timeout.duration).asInstanceOf[(Double, Double)]
+      //println(r2)
+      setLearningRateField(r2._1.toString)
+      setTestingRateField(r2._2.toString)
     }
     //
 
