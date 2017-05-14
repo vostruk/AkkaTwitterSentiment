@@ -611,7 +611,13 @@ object sentimentgui extends JFXApp {
       var file = inputFileChooser.showOpenDialog(stage)
       if (file != null) {
         //println("fileok")
-        FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
+        val vali = new inputValidator()
+        if (vali.validate(file)) {
+          FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
+        }
+        else{
+          new Alert(AlertType.INFORMATION, "Input file has incorrect format.").showAndWait()
+        }
       }
       hashtagConfirm.setDisable(false)
 
@@ -631,9 +637,18 @@ object sentimentgui extends JFXApp {
             var file = inputFileChooser.showOpenDialog(stage)
             if (file != null) {
               //println("fileok")
-              TestingActorInstance ! SetTestDataFile(file)
-              TestingActorInstance ! StartEvaluatingModel
+
+
+              val vali = new inputValidator()
+              if (vali.validate(file)) {
+                TestingActorInstance ! SetTestDataFile(file)
+                TestingActorInstance ! StartEvaluatingModel
+              }
+              else{
+                new Alert(AlertType.INFORMATION, "Input file has incorrect format.").showAndWait()
+              }
             }
+
 
     }
   }
