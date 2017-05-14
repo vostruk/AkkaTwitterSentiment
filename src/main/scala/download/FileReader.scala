@@ -2,6 +2,7 @@ package download
 
 import akka.actor.{Actor, ActorRef}
 import classify.DocumentCategoryMessage
+import sentimentgui.sentimentgui.guiAlert
 
 import scala.io.Source
 
@@ -10,7 +11,7 @@ case class StartLearningFromFile(fileName: String)
 case object ReadNextLine
 case object StopLearningFromFile
 
-class FileReader(naiveBayesActor: ActorRef) extends Actor {
+class FileReader(naiveBayesActor: ActorRef, GuiActorInstance : ActorRef) extends Actor {
   var linesIteratorOption: Option[Iterator[String]] = None
 
   def receive = {
@@ -31,6 +32,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
           }
           else {
             println("done")
+            GuiActorInstance ! guiAlert("Reading file is done!")
             linesIteratorOption = None
           }
       }

@@ -139,7 +139,8 @@ object sentimentgui extends JFXApp {
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineStreamerRouterActor(routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
-  val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
+  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+  val FileReaderActor = system.actorOf(Props(new FileReader(routerActor,GuiActorInstance)))
   val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)))
   //FileReaderActor ! StartLearningFromFile("TweetsFromStreamerCategorized.txt")
 
@@ -533,8 +534,8 @@ object sentimentgui extends JFXApp {
     selected = true
     visible = ENABLE_PLOT
     onAction = { ae =>
-      //refreshGui()
-      GuiActorInstance ! downloadDone()
+      refreshGui()
+      //GuiActorInstance ! downloadDone()
     }
   }
   val dateInput = new DatePicker(LocalDate.now()) {
@@ -962,12 +963,13 @@ object sentimentgui extends JFXApp {
 
 
   abstract class AbstractClass
-  case class GuiSetField(input :String) extends AbstractClass
+  case class guiSetField(input :String) extends AbstractClass
+  case class guiAlert(input :String) extends AbstractClass
   case class downloadDone() extends AbstractClass
   class GuiActor extends Actor {
 
     override def receive = {
-      case GuiSetField(inputString :String) =>
+      case guiSetField(inputString :String) =>
         //setQualityField(inputString)
       case downloadDone() =>
         Platform.runLater(
@@ -975,9 +977,15 @@ object sentimentgui extends JFXApp {
             refreshGui()
           }
         )
+      case guiAlert(input :String) =>
+        Platform.runLater(
+          () -> {
+            new Alert(AlertType.INFORMATION, input).showAndWait()
+          }
+        )
     }
   }
-  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+
 
 
   val executor = new ScheduledThreadPoolExecutor(1)
