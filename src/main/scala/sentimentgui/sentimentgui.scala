@@ -1077,7 +1077,7 @@ object sentimentgui extends JFXApp {
         new HBox(20,
           new Text("Learning rate:"),
           learningRateField,
-          new Text("Testing rate:"),
+          new Text("Classification rate:"),
           testingRateField
 
         )
