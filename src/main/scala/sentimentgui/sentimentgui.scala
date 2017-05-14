@@ -103,10 +103,6 @@ object sentimentgui extends JFXApp {
     }
     def print(): String ={
      val s = this.CKey + "\t"+ this.CSecret + "\t" + this.AToken + "\t" + this.ASecret + "\n"
-//      println(this.CKey)
-//      println(this.CSecret)
-//        println(this.AToken)
-//        println(this.ASecret)
       return s
     }
   }
@@ -158,11 +154,6 @@ object sentimentgui extends JFXApp {
 
   def castMapToList(MP: scala.collection.mutable.Map[String, Map[String, Int]], range: Double): List[List[Double]]= {
 
-
-    //for (i <- -range.toInt to range.toInt){
-
-    // s = List.concat(s, List(i.toDouble))
-
     //NEED TO GET ALL DATES FROM RANGE and then just count
     val allDates = new ListBuffer[String]()
     for ((k, v) <- MP)
@@ -206,8 +197,6 @@ object sentimentgui extends JFXApp {
           sampleSurpriseList+=MP("surprise")(dd)
         } else {sampleSurpriseList+=0}})
 
-    //   sampleDisgustList = List.concat(sampleDisgustList, List(randomGen.nextDouble()*5+40.0))
-    //  }
     println(MP)
     var sampleInput = List(
       sampleAngerList.toList,
@@ -278,9 +267,7 @@ object sentimentgui extends JFXApp {
       s = List.concat(s, List(i.toDouble))
     }
     days2 = DenseVector(s.toArray)
-    //println(days2)
     sampleAnger = DenseVector(inputData(0).toArray)
-    //println(sampleAnger)
     sampleDisgust = DenseVector(inputData(1).toArray)
     sampleFear = DenseVector(inputData(2).toArray)
     sampleHappines = DenseVector(inputData(3).toArray)
@@ -307,18 +294,14 @@ object sentimentgui extends JFXApp {
   def getPseudocountFromInput () : Double ={
     try {
       val s = pseudoOrFreqInput.getText()
-      //if (isAllDigits(s)) {
+
         val t = s.toDouble
         if (t <= 0) {
           new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0
         }
-        //println(t)
+
         return t
-//      }
-//      else {
-//        new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait()
-//        return -1.0
-//      }
+
     } catch {
       case ex :NumberFormatException =>
         new Alert(AlertType.INFORMATION, "pseudocount has to be a positive number").showAndWait(); return -1.0
@@ -337,7 +320,6 @@ object sentimentgui extends JFXApp {
       return -1
     }
 
-//    return frequencyThresholdInput.getText()
   }
   def getNgramInput () : Int ={
     val s = ngramInput.getText()
@@ -350,7 +332,6 @@ object sentimentgui extends JFXApp {
       new Alert(AlertType.INFORMATION, "Ngram has to be a positive integer").showAndWait()
       return -1
     }
-//    return ngramInput.getText()
   }
 
   def getNumberOfWorkersFromInput () : Int ={
@@ -364,7 +345,6 @@ object sentimentgui extends JFXApp {
       new Alert(AlertType.INFORMATION, "Number of workers has to be a positive integer").showAndWait()
       return -1
     }
-    //    return ngramInput.getText()
   }
 
   def setQualityField (in: String) : Unit ={
@@ -394,7 +374,7 @@ object sentimentgui extends JFXApp {
   var sampleSadnessList : List[Double] = List()
   var sampleSurpriseList : List[Double] = List()
 
-  //temp
+  //init plot values
   var range = 5.0
   for (i <- -range.toInt to range.toInt){
     s = List.concat(s, List(i.toDouble))
@@ -419,15 +399,15 @@ object sentimentgui extends JFXApp {
   var sampleHappines = DenseVector(sampleHappinesList.toArray)
   var sampleSadness = DenseVector(sampleSadnessList.toArray)
   var sampleSurprise = DenseVector(sampleSurpriseList.toArray)
-  //cal.add(Calendar.DATE, 1)
-  //println(cal.getTime())
+
   var dataPairs = Seq(("Anger", 1.0), ("Disgust", 17.0), ("Fear", 25.0), ("Happines", 27.0), ("Sadness", 5.0), ("Surprise", 5.0))
-  //temp
+  // //init plot values
+
+  //plotting
   val f = Figure("Twitter Plot")
   var p = f.subplot(0)
   if (ENABLE_PLOT) {
-//    val f = Figure("Twitter Plot")
-//    var p = f.subplot(0)
+
     val x = linspace(0.0, 1.0)
     p += plot(days2, sampleAnger)
     p.xlabel = "Days"
@@ -597,10 +577,7 @@ object sentimentgui extends JFXApp {
   val fileLearningConfirm = new Button {
     text = "Learn"
     onAction = { ae =>
-//      var file = inputFileChooser.showOpenDialog(stage)
-//      if (file != null) {
-//       //process it
-//      }
+
       resetModelConfirm.setDisable(true)
       //hashtagConfirm.setDisable(true)
       //disable = true
@@ -815,9 +792,6 @@ object sentimentgui extends JFXApp {
           new Alert(AlertType.INFORMATION, "keyCofing file has incorrect format!\n" +ex.toString).showAndWait()
       }
 
-//      val lines = source.mkString
-//      println (lines.split("\n"))
-
     }
   }
 
@@ -861,7 +835,6 @@ object sentimentgui extends JFXApp {
         hashtagConfirm.setDisable(true)
         println("Clearing trained model.")
         categoriesRepository ! ClearTrainedModel
-        //cq ! GuiUpdateQuality("test")
     }
   }
 
