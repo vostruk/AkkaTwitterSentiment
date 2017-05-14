@@ -435,6 +435,7 @@ object sentimentgui extends JFXApp {
   val hashtagConfirm = new Button {
     text = "Ok"
     disable = true
+    minWidth=40
     onAction = { ae =>
       getclassifiedDataFromActor()
       refreshGui()
@@ -858,7 +859,8 @@ object sentimentgui extends JFXApp {
 
   val pseudoOrFreqInput = new TextField{
     text = "2"
-    maxWidth = 30
+    maxWidth = 60
+    minWidth = 60
   }
   val pseudoOrFreqInputLabel = new Text("           pseudocount:")
 
