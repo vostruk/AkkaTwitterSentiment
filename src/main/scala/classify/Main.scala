@@ -3,6 +3,7 @@ package classify
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+import kamon.Kamon
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -41,6 +42,9 @@ class Learner(routerActor: ActorRef) extends Actor {
 
 
 object Main extends App {
+  Kamon.start()
+  // This application wont terminate unless you shutdown Kamon.
+  //Kamon.shutdown()
   val system = ActorSystem("SAGSystem")
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
