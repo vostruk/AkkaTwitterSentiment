@@ -538,6 +538,17 @@ object sentimentgui extends JFXApp {
       //GuiActorInstance ! downloadDone()
     }
   }
+
+  def setDisabledCheckboxes(in : Boolean): Unit = {
+    AngerCheckBox.disable = in
+    DisgustCheckBox.disable = in
+    FearCheckBox.disable = in
+    HappinesCheckBox.disable = in
+    SadnessCheckBox.disable = in
+    SurpriseCheckBox.disable = in
+  }
+
+
   val dateInput = new DatePicker(LocalDate.now()) {
 
   }
