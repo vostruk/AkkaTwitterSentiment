@@ -9,12 +9,17 @@ import scala.io.Source
 case class StartLearningFromFile(fileName: String)
 case object ReadNextLine
 case object StopLearningFromFile
+case object GetLearningProgress
 
 class FileReader(naiveBayesActor: ActorRef) extends Actor {
   var linesIteratorOption: Option[Iterator[String]] = None
+  var currentLine: Int = 0
+  var currentFileNumberOfLines: Int = 0
 
   def receive = {
     case StartLearningFromFile(fileName) =>
+      currentLine = 0
+      currentFileNumberOfLines = Source.fromFile(fileName).getLines.size
       linesIteratorOption = Some(Source.fromFile(fileName).getLines)
       println("reading from "+fileName)
       self ! ReadNextLine
@@ -27,6 +32,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
             val line = linesIterator.next()
             val categoryDocumentPair = line.split("\\t")
             naiveBayesActor ! DocumentCategoryMessage(categoryDocumentPair(1), categoryDocumentPair(0))
+            currentLine += 1
             self ! ReadNextLine
           }
           else {
@@ -38,5 +44,8 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
     case StopLearningFromFile =>
       linesIteratorOption = None
       println("stopped reading")
+
+    case GetLearningProgress =>
+      sender ! (currentLine.toFloat / currentFileNumberOfLines)
   }
 }
