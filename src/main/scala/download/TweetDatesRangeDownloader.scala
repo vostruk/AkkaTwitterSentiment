@@ -34,12 +34,13 @@ case class SetUserKeysDownloader(ck: String, cs: String, at: String, as: String)
 case class SetRange(from: LocalDate, To: LocalDate)
 case class AnalyseTweetsForHashtag(ht:String)
 case class CountCategoryMessage(c:String, dm:String)
+case object DoneAnalysing
 
-class RangeDownloaderRouterActor (routerActor: ActorRef) extends Actor {
+class RangeDownloaderRouterActor (routerActor: ActorRef, GuiActor: ActorRef) extends Actor {
 
   var RangeDownloadActors = mutable.Set[ActorRef]()
   var DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
-
+  var DoneAn =0
   override def receive = {
     case SetRange(f, t) =>
       //uwaga - nie zadziala dla konca roku
@@ -58,28 +59,30 @@ class RangeDownloaderRouterActor (routerActor: ActorRef) extends Actor {
 
     case message@AnalyseTweetsForHashtag(_) => {
       DateToStat = scala.collection.mutable.Map[String, Map[String, Int]]()
+      DoneAn =0
       RangeDownloadActors.foreach(_ ! message)
     }
     case SetUserKeysDownloader(ck: String, cs: String, at: String, as: String) => {
       for (ac <- RangeDownloadActors)
         ac ! SetUserKeysDownloader(ck, cs, at, as)
     }
-    case GetDateToStatMessage => {
-      sender ! DateToStat
+    case DoneAnalysing => {
+      DoneAn+=1
+      if(DoneAn==RangeDownloadActors.size) GuiActor ! DoneAnalysing
     }
-    case CountCategoryMessage(c: String, dayMonth:String) =>{
-      if(c != null) {
 
+    case GetDateToStatMessage =>
+      sender ! DateToStat
+    case CountCategoryMessage(c: String, dayMonth:String) =>
+      if(c != null) {
         if(!DateToStat.contains(c))
         {DateToStat(c) = Map[String, Int](); println("Set new emoji to map!!###") }
         //if sentiment didn't exist in map will be created now
-
         if(!DateToStat(c).contains(dayMonth))
-          DateToStat(c)(dayMonth) = 1;
+          DateToStat(c)(dayMonth) = 1
         else DateToStat(c)( dayMonth) = DateToStat(c)( dayMonth) + 1
       }
       else println("Ccategory is null wtf??")
-    }
   }
 }
 
@@ -182,6 +185,7 @@ class TweetDatesRangeDownloader(naiveBayesActor: ActorRef, myRouterActor: ActorR
     }
     case AnalyseTweetsForHashtag(q: String) => {
       search(4, encodeFirstQuery(q, FromRange, ToRange))
+      sender ! DoneAnalysing
     }
 
     case CategoryMessage(category: Option[String], dateTweet: (String, String)) => {

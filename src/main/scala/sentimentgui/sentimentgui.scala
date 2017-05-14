@@ -132,10 +132,12 @@ object sentimentgui extends JFXApp {
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 0.001)
-  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
+  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor, GuiActorInstance)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineStreamerRouterActor(routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
-  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor,GuiActorInstance)))
   val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)))
   //FileReaderActor ! StartLearningFromFile("TweetsFromStreamerCategorized.txt")
@@ -515,7 +517,7 @@ object sentimentgui extends JFXApp {
     visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
-      //GuiActorInstance ! downloadDone()
+      //GuiActorInstance ! DoneAnalysing
     }
   }
 
@@ -961,16 +963,15 @@ object sentimentgui extends JFXApp {
 
 
 
-  abstract class AbstractClass
-  case class guiSetField(input :String) extends AbstractClass
-  case class guiAlert(input :String) extends AbstractClass
-  case class downloadDone() extends AbstractClass
+  case class guiSetField(input :String)
+  case class guiAlert(input :String)
+
   class GuiActor extends Actor {
 
     override def receive = {
       case guiSetField(inputString :String) =>
         //setQualityField(inputString)
-      case downloadDone() =>
+      case DoneAnalysing =>
         Platform.runLater(
           () -> {
             refreshGui()

@@ -119,8 +119,8 @@ class OnlineTweetStreamer(consumerToken: ConsumerToken, accessToken: AccessToken
         val emoji = filterEmoji(tweet.text)
         if (emoji != "None" && emoji != "Many") {
           receiver ! DocumentCategoryMessage(tweet.text.filter(_ >= ' '), emoji)
-         // new PrintWriter(new FileOutputStream(new File("Day2TweetsFromStreamer.txt"),true))
-         // { write(emoji+"\t"+tweet.text.filter(_ >= ' ').replace('\n', ' ').replace('\t', ' ')+"\n"); close }
+          new PrintWriter(new FileOutputStream(new File("Day2TweetsFromStreamer.txt"),true))
+          { write(emoji+"\t"+tweet.text.filter(_ >= ' ').replace('\n', ' ').replace('\t', ' ')+"\n"); close }
            countReceived = countReceived + 1
         }
       }
