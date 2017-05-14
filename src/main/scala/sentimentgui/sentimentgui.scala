@@ -55,6 +55,7 @@ import scala.concurrent.duration._
 
 import java.io.PrintWriter
 import scala.io.Source
+import scalafx.application.Platform
 
 
 
@@ -532,7 +533,8 @@ object sentimentgui extends JFXApp {
     selected = true
     visible = ENABLE_PLOT
     onAction = { ae =>
-      refreshGui()
+      //refreshGui()
+      GuiActorInstance ! downloadDone()
     }
   }
   val dateInput = new DatePicker(LocalDate.now()) {
@@ -959,16 +961,23 @@ object sentimentgui extends JFXApp {
 
 
 
-//  abstract class QualityIn
-//  case class GuiUpdateQuality(input :String) extends QualityIn
-//  class ShowClassificationQualityActor extends Actor {
-//
-//    override def receive = {
-//      case GuiUpdateQuality(inputString :String) =>
-//        setQualityField(inputString)
-//    }
-//  }
-//  val cq = system.actorOf(Props(new ShowClassificationQualityActor()))
+  abstract class AbstractClass
+  case class GuiSetField(input :String) extends AbstractClass
+  case class downloadDone() extends AbstractClass
+  class GuiActor extends Actor {
+
+    override def receive = {
+      case GuiSetField(inputString :String) =>
+        //setQualityField(inputString)
+      case downloadDone() =>
+        Platform.runLater(
+          () -> {
+            refreshGui()
+          }
+        )
+    }
+  }
+  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
 
 
   val executor = new ScheduledThreadPoolExecutor(1)
@@ -983,6 +992,15 @@ object sentimentgui extends JFXApp {
   }
   val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
 //  //sched.cancel(false)
+
+//  val GUIrefresher = new Runnable {
+//    def run() = {
+//      implicit val timeout = Timeout(5 seconds)
+//      refreshGui()
+//    }
+//  }
+//
+//  val sched2 = executor.scheduleAtFixedRate(GUIrefresher, 5, 5, TimeUnit.SECONDS)
 
 
   stage = new JFXApp.PrimaryStage {
