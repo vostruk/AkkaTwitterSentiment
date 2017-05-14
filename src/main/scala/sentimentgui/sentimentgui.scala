@@ -1017,7 +1017,7 @@ object sentimentgui extends JFXApp {
     //
 
   }
-  val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
+
 //  //sched.cancel(false)
 
 //  val GUIrefresher = new Runnable {
@@ -1090,6 +1090,8 @@ object sentimentgui extends JFXApp {
       System.exit(0)
     }
   }
+
+  val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
 
 
 
