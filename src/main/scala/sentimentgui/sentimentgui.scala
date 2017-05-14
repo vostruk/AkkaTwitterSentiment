@@ -7,17 +7,16 @@ import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import download._
 
-import scala.collection.{mutable, immutable}
+import scala.collection.{immutable, mutable}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.{ListBuffer, Map}
 import scala.concurrent.Await
 import scalafx.application.JFXApp
 import scalafx.collections.ObservableBuffer
-
 import scalafx.scene.chart.PieChart
-
 import breeze.linalg._
 import breeze.plot._
+
 import scalafx.scene.control.DatePicker
 import java.time.LocalDate
 
@@ -47,19 +46,22 @@ import javafx.scene.control.Alert.AlertType.INFORMATION
 import akka.actor.SupervisorStrategy._
 import akka.routing.{RoundRobinGroup, RoundRobinPool}
 import classify.Main.categoriesRepository
-
 import java.util.concurrent._
 import java.util.Timer
 
 import scala.concurrent.duration._
-
 import java.io.PrintWriter
+
+import kamon.Kamon
+
 import scala.io.Source
 import scalafx.application.Platform
 
 
 
 object sentimentgui extends JFXApp {
+
+  Kamon.start()
 
   val ENABLE_PLOT = true
 
@@ -132,8 +134,8 @@ object sentimentgui extends JFXApp {
 
   var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
-  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
-  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
+  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()), name = "CategoriesRepository")
+  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)), name = "ClassificationROuter")
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 0.001)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
@@ -141,7 +143,7 @@ object sentimentgui extends JFXApp {
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
   val GuiActorInstance = system.actorOf(Props(new GuiActor()))
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor,GuiActorInstance)))
-  val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)))
+  val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)), name = "TestingActor")
   //FileReaderActor ! StartLearningFromFile("TweetsFromStreamerCategorized.txt")
 
   def getclassifiedDataFromActor() = {

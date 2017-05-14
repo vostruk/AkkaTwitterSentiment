@@ -49,8 +49,8 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
         testDocuments.zip(testLabels).foreach((x) => naiveBayesModelRouterActor ! ClassifyDocumentMessage(x._1, self, x._2))
       }
       if (evaluationRunning) {
-        Thread.sleep(1000)
         self ! EvaluateModel
+        //context.system.scheduler.scheduleOnce(10 milliseconds, self, EvaluateModel)
       }
     case CategoryMessage(Some(category), trueCategory) if category == trueCategory.asInstanceOf[String] =>
       receivedDecisions += 1

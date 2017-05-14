@@ -5,6 +5,7 @@ import scala.math.log
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -18,8 +19,12 @@ case class SetWorkersNumber(workers: Int)
 
 
 class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Actor {
+
   private val naiveBayesModelActors = mutable.ListBuffer[ActorRef]()
   var nextWorkerIndex = 0
+  var classifiedDocuments = 0
+  var addedDocuments = 0
+  var lastPing: Long = 0
 
   def selectWorker() = {
     val nextWorker = naiveBayesModelActors(nextWorkerIndex)
@@ -36,6 +41,7 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
       for (_ <- 1 to math.abs(delta)) {
         categoriesRepositoryActor ! createOrDestroyMessage
       }
+      self ! PingMessage
 
     case ModelActorCreated(actorRef) =>
       naiveBayesModelActors += actorRef
@@ -44,10 +50,23 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
       naiveBayesModelActors -= actorRef
 
     case message@DocumentCategoryMessage(_, _) =>
+      addedDocuments += 1
       selectWorker() ! message
 
     case message@ClassifyDocumentMessage(_, _, _) =>
+      classifiedDocuments += 1
       selectWorker() ! message
+
+    case PingMessage =>
+      val currentTime = System.currentTimeMillis()
+      val secondsElapsed = (currentTime.toDouble - lastPing) / 1000
+      println("------------")
+      println(addedDocuments / secondsElapsed)
+      println(classifiedDocuments / secondsElapsed)
+      addedDocuments = 0
+      classifiedDocuments = 0
+      lastPing = currentTime
+      context.system.scheduler.scheduleOnce(5 seconds, self, PingMessage)
   }
 }
 
