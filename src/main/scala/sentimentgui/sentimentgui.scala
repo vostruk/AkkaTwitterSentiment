@@ -134,7 +134,7 @@ object sentimentgui extends JFXApp {
   val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
-  categoriesRepository ! LaplaceSmoothingModel(2, 2)
+  categoriesRepository ! LaplaceSmoothingModel(2, 0.001)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineStreamerRouterActor(routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
@@ -218,7 +218,7 @@ object sentimentgui extends JFXApp {
     if (sampleInput(0).isEmpty){
       sampleInput = List( List(0.0),List(0.0),List(0.0),List(0.0),List(0.0),List(0.0))
     }
-
+    println(sampleInput)
     sampleInput
   }
 
@@ -236,6 +236,7 @@ object sentimentgui extends JFXApp {
     statFuture.foreach(x => loadData(castMapToList(x, getScopeFromInput()*2)))
     sentimentPieChart.title = "Sentiment pie chart for #" + getHashtagFromInput() + ""
     //genRandomData(getScopeFromInput()))
+    println(days2)
 
     if (ENABLE_PLOT){
     f.clearPlot(0)
@@ -271,7 +272,7 @@ object sentimentgui extends JFXApp {
     //list of 6 lists of any length
     if (inputData.size != 6) {return}
     s = List()
-    for (i <- -(inputData(0).size)/2 to (inputData(0).size)/2){
+    for (i <- 1 to inputData(0).size){
       s = List.concat(s, List(i.toDouble))
     }
     days2 = DenseVector(s.toArray)
@@ -438,7 +439,7 @@ object sentimentgui extends JFXApp {
     minWidth=40
     onAction = { ae =>
       getclassifiedDataFromActor()
-      refreshGui()
+      //refreshGui()
     }
   }
 
@@ -538,7 +539,7 @@ object sentimentgui extends JFXApp {
 
   }
 
-  val sliderInput = new Slider(0.0,3.0,1.0) {
+  val sliderInput = new Slider(1.0,3.0,1.0) {
     onMouseReleased = { ae =>
       scopeField.text = value.value.toInt.toString
       //scopeField.text = dhComboBox.value.toString
@@ -858,7 +859,7 @@ object sentimentgui extends JFXApp {
   }
 
   val pseudoOrFreqInput = new TextField{
-    text = "2"
+    text = "0.001"
     maxWidth = 60
     minWidth = 60
   }

@@ -30,6 +30,7 @@ class FileReader(naiveBayesActor: ActorRef) extends Actor {
             self ! ReadNextLine
           }
           else {
+            println("done")
             linesIteratorOption = None
           }
       }
