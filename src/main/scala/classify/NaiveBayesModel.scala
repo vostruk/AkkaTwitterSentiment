@@ -16,6 +16,7 @@ case class ClassifyDocumentMessage(document: String, sendCategoryTo: ActorRef, d
 case class CategoryMessage(category: Option[String], data: Any)
 case class SetNGramOrder(ngramOrder: Int)
 case class SetWorkersNumber(workers: Int)
+case object GetProcessingRates
 
 
 class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Actor {
@@ -25,6 +26,8 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
   var classifiedDocuments = 0
   var addedDocuments = 0
   var lastPing: Long = 0
+  var learningRate = 0.0
+  var classificationRate = 0.0
 
   def selectWorker() = {
     val nextWorker = naiveBayesModelActors(nextWorkerIndex)
@@ -60,13 +63,15 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
     case PingMessage =>
       val currentTime = System.currentTimeMillis()
       val secondsElapsed = (currentTime.toDouble - lastPing) / 1000
-      println("------------")
-      println(addedDocuments / secondsElapsed)
-      println(classifiedDocuments / secondsElapsed)
+      learningRate = addedDocuments / secondsElapsed
+      classificationRate = classifiedDocuments / secondsElapsed
       addedDocuments = 0
       classifiedDocuments = 0
       lastPing = currentTime
       context.system.scheduler.scheduleOnce(5 seconds, self, PingMessage)
+
+    case GetProcessingRates =>
+      sender ! (learningRate, classificationRate)
   }
 }
 

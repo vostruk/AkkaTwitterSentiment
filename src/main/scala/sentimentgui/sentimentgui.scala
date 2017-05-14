@@ -52,16 +52,12 @@ import java.util.Timer
 import scala.concurrent.duration._
 import java.io.PrintWriter
 
-import kamon.Kamon
-
 import scala.io.Source
 import scalafx.application.Platform
 
 
 
 object sentimentgui extends JFXApp {
-
-  Kamon.start()
 
   val ENABLE_PLOT = true
 
