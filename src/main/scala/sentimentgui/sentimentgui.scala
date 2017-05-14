@@ -7,23 +7,17 @@ import classify._
 import com.danielasfregola.twitter4s.entities.{AccessToken, ConsumerToken}
 import download._
 
-import scala.collection.immutable
+import scala.collection.{mutable, immutable}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.{ListBuffer, Map}
 import scala.concurrent.Await
 import scalafx.application.JFXApp
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.Scene
-import scalafx.scene.layout.VBox
-import scalafx.scene.layout.HBox
-import scalafx.scene.control.Button
+
 import scalafx.scene.chart.PieChart
-import scalafx.scene.control.TextField
-import scalafx.scene.control.CheckBox
-import scalafx.scene.text.Text
+
 import breeze.linalg._
 import breeze.plot._
-
 import scalafx.scene.control.DatePicker
 import java.time.LocalDate
 
@@ -116,7 +110,7 @@ object sentimentgui extends JFXApp {
     }
   }
   var authList = new ListBuffer[authKey]()
-
+ var oldAuthSize = 0
 
   val system = ActorSystem("DownloadSystem")
 
@@ -130,8 +124,8 @@ object sentimentgui extends JFXApp {
   authList(0).setKeys(CKey,CSecret,AToken,ASecret)
   var defaultAuthList = authList
 
-  val consumerToken = ConsumerToken( CKey, CSecret)
-  val accessToken = AccessToken(AToken, ASecret)
+ // val consumerToken = ConsumerToken( CKey, CSecret)
+ // val accessToken = AccessToken(AToken, ASecret)
 
   //=============================================
 
@@ -142,7 +136,7 @@ object sentimentgui extends JFXApp {
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 2)
   val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
-  val streamActor = system.actorOf(Props(new OnlineTweetStreamer(consumerToken, accessToken, routerActor)), name = "streamActor")
+  val streamActor = system.actorOf(Props(new OnlineStreamerRouterActor(routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor)))
   val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)))
@@ -221,12 +215,11 @@ object sentimentgui extends JFXApp {
       sampleSadnessList.toList,
       sampleSurpriseList.toList)
     println(sampleInput)
-
     if (sampleInput(0).isEmpty){
       sampleInput = List( List(0.0),List(0.0),List(0.0),List(0.0),List(0.0),List(0.0))
     }
-    println(sampleInput)
-    return sampleInput
+
+    sampleInput
   }
 
   def refreshGui(): Unit = {
@@ -458,9 +451,16 @@ object sentimentgui extends JFXApp {
       //disableTestingConfirm()
       enableHoldLearningConfirm()
 
-      val ct = ConsumerToken( authList(0).CKey, authList(0).CSecret)
-      val at = AccessToken(authList(0).AToken, authList(0).ASecret)
-      streamActor ! SetUserKeys(ct,at)
+      var ListOfTokens = mutable.Set[(ConsumerToken, AccessToken)]()
+      for (el <- authList){
+        ListOfTokens.add((ConsumerToken(el.CKey, el.CSecret),  AccessToken(el.AToken, el.ASecret)))
+      }
+
+      if(authList.size!=oldAuthSize) {
+        streamActor ! SetStreamersForKeys(ListOfTokens)
+        oldAuthSize = authList.size
+      }
+
       streamActor ! StartStreamingMessage("happiness" :: "surprise" :: "sadness" :: "anger" :: "disgust" :: "fear" :: Nil, GlobalEmojiMap )
     }
   }

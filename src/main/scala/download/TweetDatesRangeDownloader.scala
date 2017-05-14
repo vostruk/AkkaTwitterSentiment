@@ -131,14 +131,14 @@ class TweetDatesRangeDownloader(naiveBayesActor: ActorRef, myRouterActor: ActorR
     } yield {
       (text.replaceAll("[\\t\\n\\r]+", " "), created, id)
     }
-    implicit val timeout = Timeout(400 seconds)
+    //implicit val timeout = Timeout(400 seconds)
     //println(result.size)
 
     //CAN PRINT parsed Tweets to file
-    val st = result.map { tuple => tuple.productIterator.mkString("\t") }
-    new PrintWriter("textTweets.txt") {
-      write(st mkString ("\n")); close
-    }
+   // val st = result.map { tuple => tuple.productIterator.mkString("\t") }
+   // new PrintWriter("textTweets.txt") {
+   //   write(st mkString ("\n")); close
+   // }
 
     //!!!!!!!or can send for classification
     //val DatesTweetsCategories = result.map { tuple =>   (tuple._2, tuple._1, (Await.result(naiveBayesActor ? ClassifyDocumentMessage(tuple._1, self, None), timeout.duration).asInstanceOf[CategoryMessage]).category.get.toString())}
@@ -195,7 +195,6 @@ class TweetDatesRangeDownloader(naiveBayesActor: ActorRef, myRouterActor: ActorR
 
         val date = sf.parse(d.toString())
         val dayMonth:String = date.getYear().toString() +"-"+ date.getMonth().toString()+"-"+ date.getDay().toString()
-        //println(dayMonth)
 
       myRouterActor ! CountCategoryMessage(c, dayMonth)
 
