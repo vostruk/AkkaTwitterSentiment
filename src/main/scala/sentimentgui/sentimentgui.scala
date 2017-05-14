@@ -130,10 +130,12 @@ object sentimentgui extends JFXApp {
   val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)), name = "ClassificationROuter")
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 0.001)
-  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor)), name = "DownloadActor")
+  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+
+  val TweetDatesRangeDownloaderActor = system.actorOf(Props(new RangeDownloaderRouterActor(routerActor, GuiActorInstance)), name = "DownloadActor")
   val streamActor = system.actorOf(Props(new OnlineStreamerRouterActor(routerActor)), name = "streamActor")
   //val TestingActor = system.actorOf(Props(new TestingActor(testingFileName,routerActor)))
-  val GuiActorInstance = system.actorOf(Props(new GuiActor()))
+
   val FileReaderActor = system.actorOf(Props(new FileReader(routerActor,GuiActorInstance)))
   val TestingActorInstance = system.actorOf(Props(new TestingActor(routerActor)), name = "TestingActor")
   //FileReaderActor ! StartLearningFromFile("TweetsFromStreamerCategorized.txt")
@@ -349,6 +351,14 @@ object sentimentgui extends JFXApp {
     clasifierQualityField.text = in
   }
 
+  def setLearningRateField (in: String) : Unit ={
+    learningRateField.text = in
+  }
+
+  def setTestingRateFieldField (in: String) : Unit ={
+    testingRateField.text = in
+  }
+
 
   //utility
   def sumArray(input:Array[Double]): Double = {
@@ -513,7 +523,7 @@ object sentimentgui extends JFXApp {
     visible = ENABLE_PLOT
     onAction = { ae =>
       refreshGui()
-      //GuiActorInstance ! downloadDone()
+      //GuiActorInstance ! DoneAnalysing
     }
   }
 
@@ -953,22 +963,27 @@ object sentimentgui extends JFXApp {
     maxWidth = 60
   }
 
+  val learningRateField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
 
+  val testingRateField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
 
+  case class guiSetField(input :String)
+  case class guiAlert(input :String)
 
-
-
-
-  abstract class AbstractClass
-  case class guiSetField(input :String) extends AbstractClass
-  case class guiAlert(input :String) extends AbstractClass
-  case class downloadDone() extends AbstractClass
   class GuiActor extends Actor {
 
     override def receive = {
       case guiSetField(inputString :String) =>
         //setQualityField(inputString)
-      case downloadDone() =>
+      case DoneAnalysing =>
         Platform.runLater(
           () -> {
             refreshGui()
@@ -989,11 +1004,15 @@ object sentimentgui extends JFXApp {
   val task = new Runnable {
     def run() = {
       implicit val timeout = Timeout(5 seconds)
-      val future = TestingActorInstance ? GetAccuracy
+      var future = TestingActorInstance ? GetAccuracy
       var result = Await.result(future, timeout.duration).asInstanceOf[String]
       //println(result)
       setQualityField(result)
+
+      //future = routerActor ? GetProcessingRates
     }
+    //
+
   }
   val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
 //  //sched.cancel(false)
@@ -1051,12 +1070,14 @@ object sentimentgui extends JFXApp {
           sliderInput,
           scopeField,
           dhComboBox
+        ),
+        new HBox(20,
+          new Text("Learning rate:"),
+          learningRateField,
+          new Text("Testing rate:"),
+          testingRateField
+
         )
-//        new HBox(20,
-//          new Text("File input:"),
-//          fileConfirm
-//
-//        )
       )
     }
     onCloseRequest = handle {
