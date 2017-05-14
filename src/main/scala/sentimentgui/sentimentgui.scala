@@ -353,6 +353,14 @@ object sentimentgui extends JFXApp {
     clasifierQualityField.text = in
   }
 
+  def setLearningRateField (in: String) : Unit ={
+    learningRateField.text = in
+  }
+
+  def setTestingRateFieldField (in: String) : Unit ={
+    testingRateField.text = in
+  }
+
 
   //utility
   def sumArray(input:Array[Double]): Double = {
@@ -957,11 +965,17 @@ object sentimentgui extends JFXApp {
     maxWidth = 60
   }
 
+  val learningRateField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
 
-
-
-
-
+  val testingRateField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
 
   case class guiSetField(input :String)
   case class guiAlert(input :String)
@@ -992,11 +1006,15 @@ object sentimentgui extends JFXApp {
   val task = new Runnable {
     def run() = {
       implicit val timeout = Timeout(5 seconds)
-      val future = TestingActorInstance ? GetAccuracy
+      var future = TestingActorInstance ? GetAccuracy
       var result = Await.result(future, timeout.duration).asInstanceOf[String]
       //println(result)
       setQualityField(result)
+
+      //future = routerActor ? GetProcessingRates
     }
+    //
+
   }
   val sched = executor.scheduleAtFixedRate(task, 1, 1, TimeUnit.SECONDS)
 //  //sched.cancel(false)
@@ -1054,12 +1072,14 @@ object sentimentgui extends JFXApp {
           sliderInput,
           scopeField,
           dhComboBox
+        ),
+        new HBox(20,
+          new Text("Learning rate:"),
+          learningRateField,
+          new Text("Testing rate:"),
+          testingRateField
+
         )
-//        new HBox(20,
-//          new Text("File input:"),
-//          fileConfirm
-//
-//        )
       )
     }
     onCloseRequest = handle {
