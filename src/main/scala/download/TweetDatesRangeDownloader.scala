@@ -188,7 +188,7 @@ class TweetDatesRangeDownloader(naiveBayesActor: ActorRef, myRouterActor: ActorR
       sender ! DoneAnalysing
     }
 
-    case CategoryMessage(category: Option[String], dateTweet: (String, String)) => {
+    case CategoryMessage(category: Option[String], dateTweet: (String, String)) if category.isDefined => {
 
       val TWITTER = "EEE MMM dd HH:mm:ss ZZZZZ yyyy";
       val sf = new SimpleDateFormat(TWITTER, Locale.US);
