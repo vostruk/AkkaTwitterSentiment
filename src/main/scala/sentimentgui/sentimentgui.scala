@@ -428,6 +428,8 @@ object sentimentgui extends JFXApp {
     disable = true
     minWidth=40
     onAction = { ae =>
+      keyTitledPane.expanded = false
+      keyTitledPane.disable = true
       getclassifiedDataFromActor()
       //refreshGui()
     }
@@ -442,6 +444,9 @@ object sentimentgui extends JFXApp {
       //disableLearningConfirm()
       //disableTestingConfirm()
       enableHoldLearningConfirm()
+      setParamsButton.setDisable(true)
+      keyTitledPane.expanded = false
+      keyTitledPane.disable = true
 
       var ListOfTokens = mutable.Set[(ConsumerToken, AccessToken)]()
       for (el <- authList){
@@ -592,6 +597,7 @@ object sentimentgui extends JFXApp {
       //loadDataConfirm.setDisable(true)
       //disableTestingConfirm()
       enableHoldLearningConfirm()
+      setParamsButton.setDisable(true)
 
       var file = inputFileChooser.showOpenDialog(stage)
       if (file != null) {
