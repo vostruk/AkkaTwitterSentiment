@@ -126,8 +126,8 @@ object sentimentgui extends JFXApp {
 
   var GlobalEmojiMap = immutable.Map("happiness" -> immutable.Set("😀"),  "surprise" -> immutable.Set("😯"), "sadness"  -> immutable.Set("☹️"),  "anger" ->  immutable.Set("😠"), "disgust" -> immutable.Set("\uD83D\uDE12") ,  "fear"  -> immutable.Set("\uD83D\uDE31"))
 
-  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()), name = "CategoriesRepository")
-  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)), name = "ClassificationROuter")
+  val categoriesRepository = system.actorOf(Props(new CategoriesRepositoryActor()))
+  val routerActor = system.actorOf(Props(new NaiveBayesModelRouterActor(categoriesRepository)))
   routerActor ! SetWorkersNumber(3)
   categoriesRepository ! LaplaceSmoothingModel(2, 0.001)
   val GuiActorInstance = system.actorOf(Props(new GuiActor()))

@@ -48,7 +48,7 @@ class CategoriesRepositoryActor extends Actor {
 
     case GetCategoryActor(category) =>
       if (!categoryActors.contains(category)) {
-        val newCategory = context.actorOf(Props(new CategoryModelActor(categoryModelFactory())), name = "CategoryModelActor-" + category)
+        val newCategory = context.actorOf(Props(new CategoryModelActor(categoryModelFactory())))
         categoryActors(category) = newCategory
         broadcastToNaiveBayesActors(NewCategory(category, newCategory))
       }
