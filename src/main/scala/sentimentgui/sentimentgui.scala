@@ -423,6 +423,10 @@ object sentimentgui extends JFXApp {
   }
  //!!@@
 
+  def disableResetModelConfirm(): Unit = {
+    resetModelConfirm.setDisable(true)
+  }
+
   val hashtagConfirm = new Button {
     text = "Ok"
     disable = true
@@ -430,6 +434,8 @@ object sentimentgui extends JFXApp {
     onAction = { ae =>
       keyTitledPane.expanded = false
       keyTitledPane.disable = true
+      disableResetModelConfirm()
+      disable = true
       getclassifiedDataFromActor()
       //refreshGui()
     }
@@ -596,14 +602,16 @@ object sentimentgui extends JFXApp {
       //disable = true
       //loadDataConfirm.setDisable(true)
       //disableTestingConfirm()
-      enableHoldLearningConfirm()
-      setParamsButton.setDisable(true)
+
+
 
       var file = inputFileChooser.showOpenDialog(stage)
       if (file != null) {
         //println("fileok")
         val vali = new inputValidator()
         if (vali.validate(file)) {
+          enableHoldLearningConfirm()
+          setParamsButton.setDisable(true)
           FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
         }
         else{
@@ -623,7 +631,7 @@ object sentimentgui extends JFXApp {
       //disable = true
       //loadDataConfirm.setDisable(true)
       //disableLearningConfirm()
-      enableHoldLearningConfirm()
+      //enableHoldLearningConfirm()
 
             var file = inputFileChooser.showOpenDialog(stage)
             if (file != null) {
@@ -845,6 +853,7 @@ object sentimentgui extends JFXApp {
 
   val resetModelConfirm = new Button {
     text = "Reset"
+    disable = true
     onAction = { ae =>
         hashtagConfirm.setDisable(true)
         println("Clearing trained model.")
@@ -984,6 +993,7 @@ object sentimentgui extends JFXApp {
 
   case class guiSetField(input :String)
   case class guiAlert(input :String)
+  case class guiDoneReadingFile(input :String)
 
   class GuiActor extends Actor {
 
@@ -994,12 +1004,21 @@ object sentimentgui extends JFXApp {
         Platform.runLater(
           () -> {
             refreshGui()
+            hashtagConfirm.setDisable(false)
+            resetModelConfirm.setDisable(false)
           }
         )
       case guiAlert(input :String) =>
         Platform.runLater(
           () -> {
             new Alert(AlertType.INFORMATION, input).showAndWait()
+          }
+        )
+      case guiDoneReadingFile(input :String) =>
+        Platform.runLater(
+          () -> {
+            new Alert(AlertType.INFORMATION, input).showAndWait()
+            resetModelConfirm.setDisable(false)
           }
         )
     }

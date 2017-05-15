@@ -2,7 +2,7 @@ package download
 
 import akka.actor.{Actor, ActorRef}
 import classify.DocumentCategoryMessage
-import sentimentgui.sentimentgui.guiAlert
+import sentimentgui.sentimentgui.{guiAlert, guiDoneReadingFile}
 
 import scala.io.Source
 
@@ -38,7 +38,7 @@ class FileReader(naiveBayesActor: ActorRef, GuiActorInstance : ActorRef) extends
           }
           else {
             println("done")
-            GuiActorInstance ! guiAlert("Reading file is done!")
+            GuiActorInstance ! guiDoneReadingFile("Reading file is done!")
             linesIteratorOption = None
           }
       }
