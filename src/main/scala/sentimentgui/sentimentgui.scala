@@ -849,6 +849,7 @@ object sentimentgui extends JFXApp {
         hashtagConfirm.setDisable(true)
         println("Clearing trained model.")
         categoriesRepository ! ClearTrainedModel
+        setParamsButton.setDisable(false)
     }
   }
 
