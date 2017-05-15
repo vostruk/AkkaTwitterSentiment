@@ -432,8 +432,8 @@ object sentimentgui extends JFXApp {
     disable = true
     minWidth=40
     onAction = { ae =>
-      keyTitledPane.expanded = false
-      keyTitledPane.disable = true
+//      keyTitledPane.expanded = false
+//      keyTitledPane.disable = true
       disableResetModelConfirm()
       disable = true
       getclassifiedDataFromActor()
@@ -451,8 +451,8 @@ object sentimentgui extends JFXApp {
       //disableTestingConfirm()
       enableHoldLearningConfirm()
       setParamsButton.setDisable(true)
-      keyTitledPane.expanded = false
-      keyTitledPane.disable = true
+//      keyTitledPane.expanded = false
+//      keyTitledPane.disable = true
 
       var ListOfTokens = mutable.Set[(ConsumerToken, AccessToken)]()
       for (el <- authList){
