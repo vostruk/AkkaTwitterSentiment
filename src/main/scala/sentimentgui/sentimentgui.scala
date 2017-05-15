@@ -450,7 +450,7 @@ object sentimentgui extends JFXApp {
       //disableLearningConfirm()
       //disableTestingConfirm()
       enableHoldLearningConfirm()
-      setParamsButton.setDisable(true)
+      //setParamsButton.setDisable(true)
 //      keyTitledPane.expanded = false
 //      keyTitledPane.disable = true
 
@@ -611,7 +611,7 @@ object sentimentgui extends JFXApp {
         val vali = new inputValidator()
         if (vali.validate(file)) {
           enableHoldLearningConfirm()
-          setParamsButton.setDisable(true)
+          //setParamsButton.setDisable(true)
           FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
         }
         else{
