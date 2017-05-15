@@ -611,6 +611,7 @@ object sentimentgui extends JFXApp {
         val vali = new inputValidator()
         if (vali.validate(file)) {
           enableHoldLearningConfirm()
+          hashtagConfirm.setDisable(false)
           //setParamsButton.setDisable(true)
           FileReaderActor ! StartLearningFromFile(file.getAbsolutePath) // other file ?
         }
@@ -618,7 +619,7 @@ object sentimentgui extends JFXApp {
           new Alert(AlertType.INFORMATION, "Input file has incorrect format.").showAndWait()
         }
       }
-      hashtagConfirm.setDisable(false)
+
 
     }
   }
