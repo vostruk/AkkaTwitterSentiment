@@ -36,7 +36,7 @@ class CategoriesRepositoryActor extends Actor {
 
   override def receive = {
     case CreateNaiveBayesModelActor =>
-      val newActor = context.actorOf(Props(new NaiveBayesModelActor(self)))
+      val newActor = context.actorOf(Props(new NaiveBayesModelActor(self, categoryActors)))
       naiveBayesModelActors.add(newActor)
       sender ! ModelActorCreated(newActor)
 

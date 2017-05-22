@@ -63,12 +63,14 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
     case PingMessage =>
       val currentTime = System.currentTimeMillis()
       val secondsElapsed = (currentTime.toDouble - lastPing) / 1000
-      learningRate = addedDocuments / secondsElapsed
-      classificationRate = classifiedDocuments / secondsElapsed
-      addedDocuments = 0
-      classifiedDocuments = 0
-      lastPing = currentTime
-      context.system.scheduler.scheduleOnce(5 seconds, self, PingMessage)
+      if (secondsElapsed != 0) {
+        learningRate = addedDocuments / secondsElapsed
+        classificationRate = classifiedDocuments / secondsElapsed
+        addedDocuments = 0
+        classifiedDocuments = 0
+        lastPing = currentTime
+        context.system.scheduler.scheduleOnce(5 seconds, self, PingMessage)
+      }
 
     case GetProcessingRates =>
       sender ! (learningRate, classificationRate)
@@ -76,9 +78,8 @@ class NaiveBayesModelRouterActor(categoriesRepositoryActor: ActorRef) extends Ac
 }
 
 
-class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef) extends Actor {
+class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef, val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()) extends Actor {
 
-  val categoryActors: mutable.Map[String, ActorRef] = mutable.Map[String, ActorRef]()
   var documentPreprocessor = new DocumentPreprocessor(2)
 
   override def receive = {
