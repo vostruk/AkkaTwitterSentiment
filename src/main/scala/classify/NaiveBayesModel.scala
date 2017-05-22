@@ -115,12 +115,17 @@ class NaiveBayesModelActor(catgoriesRepositoryActor: ActorRef, val categoryActor
       ngram <- allNGrams
       ngramProbability = Await.result(categoryActor ? GetNGramProbablityMessage(ngram), 10 seconds).asInstanceOf[Double]
     } yield (category, log(ngramProbability))
-    val scoredCategories = ngramLikelihoods.groupBy(_._1).mapValues(_.map(_._2).sum).map((keyVal) => (keyVal._1, keyVal._2 + log(documentsCount(keyVal._1) / allDocumentsCount)))
-    if (scoredCategories.isEmpty) {
-      ""
+    try {
+      val scoredCategories = ngramLikelihoods.groupBy(_._1).mapValues(_.map(_._2).sum).map((keyVal) => (keyVal._1, keyVal._2 + log(documentsCount(keyVal._1) / allDocumentsCount)))
+      if (scoredCategories.isEmpty) {
+        ""
+      }
+      else {
+        scoredCategories.maxBy(_._2)._1
+      }
     }
-    else {
-      scoredCategories.maxBy(_._2)._1
+    catch {
+      case ex: Exception => ""
     }
   }
 }
