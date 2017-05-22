@@ -791,7 +791,7 @@ object sentimentgui extends JFXApp {
        }
        it = 0
        for (key<- ass){
-         authList(it).ASecret = key.dropRight(1)
+         authList(it).ASecret = key//.dropRight(1)
          it = it + 1
        }
        it = 0
@@ -856,7 +856,8 @@ object sentimentgui extends JFXApp {
     text = "Reset"
     disable = true
     onAction = { ae =>
-        hashtagConfirm.setDisable(true)
+      TestingActorInstance ! StopEvaluatingModel
+      hashtagConfirm.setDisable(true)
         println("Clearing trained model.")
         categoriesRepository ! ClearTrainedModel
         setParamsButton.setDisable(false)
@@ -876,7 +877,6 @@ object sentimentgui extends JFXApp {
 
 
       implicit val timeout = Timeout(50 seconds)
-      //TestingActorInstance ! StopEvaluatingModel
       FileReaderActor ! StopLearningFromFile
       system.actorSelection("/user/streamActor").resolveOne().onComplete {
         case Success(st) => st ! StopStreamingMessage
@@ -924,7 +924,7 @@ object sentimentgui extends JFXApp {
     text = "Set advanced options"
     onAction = { ae =>
       //println("parameters set")
-
+      TestingActorInstance ! StopEvaluatingModel
       val ngram = getNgramInput()
       if (ngram != -1) {
 
