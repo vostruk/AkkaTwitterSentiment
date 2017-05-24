@@ -991,6 +991,130 @@ object sentimentgui extends JFXApp {
     text = "0"
     maxWidth = 120
   }
+  //Ordering: Anger,Disgust,Fear,Happines,Sadness,Surprise
+
+  val classifierQualityAngerAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityAngerSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityDisgustAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityDisgustSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityFearAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityFearSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityHappinesAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualityHappinesSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualitySadnessAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualitySadnessSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualitySurpriseAccuracyField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val classifierQualitySurpriseSecondField = new TextField{
+    disable = true
+    text = "0"
+    maxWidth = 60
+  }
+
+  val secondFiledName = "Recall: "
+
+  val moreQualityStatisticsTitledPane = new TitledPane("More quality statistics",
+    new VBox(5,
+      new HBox(5,
+        new Text("Anger:      "),
+        new Text("Accuracy: "),
+        classifierQualityAngerAccuracyField,
+        new Text(secondFiledName),
+        classifierQualityAngerSecondField
+      ),
+      new HBox(5,
+        new Text("Disgust:    "),
+        new Text("Accuracy: "),
+        classifierQualityDisgustAccuracyField,
+        new Text(secondFiledName),
+        classifierQualityDisgustSecondField
+      ),
+      new HBox(5,
+        new Text("Fear:         "),
+        new Text("Accuracy: "),
+        classifierQualityFearAccuracyField,
+        new Text(secondFiledName),
+        classifierQualityFearSecondField
+      ),
+      new HBox(5,
+        new Text("Happines: "),
+        new Text("Accuracy: "),
+        classifierQualityHappinesAccuracyField,
+        new Text(secondFiledName),
+        classifierQualityHappinesSecondField
+      ),
+      new HBox(5,
+        new Text("Sadness:   "),
+        new Text("Accuracy: "),
+        classifierQualitySadnessAccuracyField,
+        new Text(secondFiledName),
+        classifierQualitySadnessSecondField
+      ),
+      new HBox(5,
+        new Text("Surprise:   "),
+        new Text("Accuracy: "),
+        classifierQualitySurpriseAccuracyField,
+        new Text(secondFiledName),
+        classifierQualitySurpriseSecondField
+      )
+    )
+  )
+  moreQualityStatisticsTitledPane.expanded = false
+
 
   case class guiSetField(input :String)
   case class guiAlert(input :String)
@@ -1040,6 +1164,29 @@ object sentimentgui extends JFXApp {
       //println(r2)
       setLearningRateField(r2._1.toString)
       setTestingRateField(r2._2.toString)
+
+      //println("?")
+      val f3 = TestingActorInstance ? GetQuality
+      val r3 = Await.result(f3, timeout.duration).asInstanceOf[classificationQuality]
+      //println(r3.AngerAccuracy.toString)
+      //Ordering: Anger,Disgust,Fear,Happines,Sadness,Surprise
+      classifierQualityAngerAccuracyField.text = r3.AngerAccuracy.toString
+      classifierQualityAngerSecondField.text = r3.AngerRecall.toString
+
+      classifierQualityDisgustAccuracyField.text = r3.DisgustAccuracy.toString
+      classifierQualityDisgustSecondField.text = r3.DisgustRecall.toString
+
+      classifierQualityFearAccuracyField.text = r3.FearAccuracy.toString
+      classifierQualityFearSecondField.text = r3.FearRecall.toString
+
+      classifierQualityHappinesAccuracyField.text = r3.HappinesAccuracy.toString
+      classifierQualityHappinesSecondField.text = r3.HappinesRecall.toString
+
+      classifierQualitySadnessAccuracyField.text = r3.SadnessAccuracy.toString
+      classifierQualitySadnessSecondField.text = r3.SadnessRecall.toString
+
+      classifierQualitySurpriseAccuracyField.text = r3.SurpriseAccuracy.toString
+      classifierQualitySurpriseSecondField.text = r3.SurpriseRecall.toString
     }
     //
 
@@ -1061,7 +1208,7 @@ object sentimentgui extends JFXApp {
     title = "Twitter Sentiment Analyzer"
     resizable = false
     scene = new Scene {
-      root = new VBox(10,
+      root = new VBox(5,
         new HBox(
           sentimentPieChart
         ),
@@ -1089,6 +1236,7 @@ object sentimentgui extends JFXApp {
         )
         ,
         advancedClasifierOptionsTitledPane,
+        moreQualityStatisticsTitledPane,
         new HBox(20,
           new Text("Hashtag :"),
           hashtagInput,

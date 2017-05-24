@@ -13,8 +13,11 @@ case object EvaluateModel
 case object StartEvaluatingModel
 case object StopEvaluatingModel
 case object GetAccuracy
+case object GetQuality
 case class SetTestDataFile(testDataFile: java.io.File)
 
+class classificationQuality {
+}
 
 class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
   implicit val duration: Timeout = 100 seconds;
@@ -67,5 +70,6 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
       }
     case GetAccuracy =>
       sender ! accuracy.toString
+    case GetQuality =>
   }
 }
