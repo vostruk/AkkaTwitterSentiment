@@ -17,6 +17,18 @@ case object GetQuality
 case class SetTestDataFile(testDataFile: java.io.File)
 
 class classificationQuality {
+  var AngerAccuracy : Double = 0.0
+  var AngerRecall : Double = 0.0
+  var DisgustAccuracy : Double = 0.0
+  var DisgustRecall : Double = 0.0
+  var FearAccuracy : Double = 0.0
+  var FearRecall : Double = 0.0
+  var HappinesAccuracy : Double = 0.0
+  var HappinesRecall : Double = 0.0
+  var SadnessAccuracy : Double = 0.0
+  var SadnessRecall : Double = 0.0
+  var SurpriseAccuracy : Double = 0.0
+  var SurpriseRecall : Double = 0.0
 }
 
 class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
@@ -25,6 +37,7 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
   var evaluationRunning = false
   var evaluationRoundInProgress = false
   var accuracy: Double = 0
+  var qualityHolder = new classificationQuality()
   var correctDecisions: Double = 0
   var receivedDecisions = 0
   var testLabels: List[String] = List[String]()
@@ -71,5 +84,6 @@ class TestingActor(naiveBayesModelRouterActor: ActorRef) extends Actor {
     case GetAccuracy =>
       sender ! accuracy.toString
     case GetQuality =>
+      sender ! qualityHolder
   }
 }
