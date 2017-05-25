@@ -1029,13 +1029,13 @@ object sentimentgui extends JFXApp {
     maxWidth = 60
   }
 
-  val classifierQualityHappinesAccuracyField = new TextField{
+  val classifierQualityHappinessAccuracyField = new TextField{
     disable = true
     text = "0"
     maxWidth = 60
   }
 
-  val classifierQualityHappinesSecondField = new TextField{
+  val classifierQualityHappinessSecondField = new TextField{
     disable = true
     text = "0"
     maxWidth = 60
@@ -1071,42 +1071,42 @@ object sentimentgui extends JFXApp {
     new VBox(5,
       new HBox(5,
         new Text("Anger:      "),
-        new Text("Accuracy: "),
+        new Text("Precision: "),
         classifierQualityAngerAccuracyField,
         new Text(secondFiledName),
         classifierQualityAngerSecondField
       ),
       new HBox(5,
         new Text("Disgust:    "),
-        new Text("Accuracy: "),
+        new Text("Precision: "),
         classifierQualityDisgustAccuracyField,
         new Text(secondFiledName),
         classifierQualityDisgustSecondField
       ),
       new HBox(5,
         new Text("Fear:         "),
-        new Text("Accuracy: "),
+        new Text("Precision: "),
         classifierQualityFearAccuracyField,
         new Text(secondFiledName),
         classifierQualityFearSecondField
       ),
       new HBox(5,
         new Text("Happines: "),
-        new Text("Accuracy: "),
-        classifierQualityHappinesAccuracyField,
+        new Text("Precision: "),
+        classifierQualityHappinessAccuracyField,
         new Text(secondFiledName),
-        classifierQualityHappinesSecondField
+        classifierQualityHappinessSecondField
       ),
       new HBox(5,
         new Text("Sadness:   "),
-        new Text("Accuracy: "),
+        new Text("Precision: "),
         classifierQualitySadnessAccuracyField,
         new Text(secondFiledName),
         classifierQualitySadnessSecondField
       ),
       new HBox(5,
         new Text("Surprise:   "),
-        new Text("Accuracy: "),
+        new Text("Precision: "),
         classifierQualitySurpriseAccuracyField,
         new Text(secondFiledName),
         classifierQualitySurpriseSecondField
@@ -1167,26 +1167,26 @@ object sentimentgui extends JFXApp {
 
       //println("?")
       val f3 = TestingActorInstance ? GetQuality
-      val r3 = Await.result(f3, timeout.duration).asInstanceOf[classificationQuality]
+      val r3 = Await.result(f3, timeout.duration).asInstanceOf[ClassificationQuality]
       //println(r3.AngerAccuracy.toString)
       //Ordering: Anger,Disgust,Fear,Happines,Sadness,Surprise
-      classifierQualityAngerAccuracyField.text = r3.AngerAccuracy.toString
-      classifierQualityAngerSecondField.text = r3.AngerRecall.toString
+      classifierQualityAngerAccuracyField.text = r3.precision("anger").toString
+      classifierQualityAngerSecondField.text = r3.recall("anger").toString
 
-      classifierQualityDisgustAccuracyField.text = r3.DisgustAccuracy.toString
-      classifierQualityDisgustSecondField.text = r3.DisgustRecall.toString
+      classifierQualityDisgustAccuracyField.text = r3.precision("disgust").toString
+      classifierQualityDisgustSecondField.text = r3.recall("disgust").toString
 
-      classifierQualityFearAccuracyField.text = r3.FearAccuracy.toString
-      classifierQualityFearSecondField.text = r3.FearRecall.toString
+      classifierQualityFearAccuracyField.text = r3.precision("fear").toString
+      classifierQualityFearSecondField.text = r3.recall("fear").toString
 
-      classifierQualityHappinesAccuracyField.text = r3.HappinesAccuracy.toString
-      classifierQualityHappinesSecondField.text = r3.HappinesRecall.toString
+      classifierQualityHappinessAccuracyField.text = r3.precision("happiness").toString
+      classifierQualityHappinessSecondField.text = r3.recall("happiness").toString
 
-      classifierQualitySadnessAccuracyField.text = r3.SadnessAccuracy.toString
-      classifierQualitySadnessSecondField.text = r3.SadnessRecall.toString
+      classifierQualitySadnessAccuracyField.text = r3.precision("sadness").toString
+      classifierQualitySadnessSecondField.text = r3.recall("sadness").toString
 
-      classifierQualitySurpriseAccuracyField.text = r3.SurpriseAccuracy.toString
-      classifierQualitySurpriseSecondField.text = r3.SurpriseRecall.toString
+      classifierQualitySurpriseAccuracyField.text = r3.precision("surprise").toString
+      classifierQualitySurpriseSecondField.text = r3.recall("surprise").toString
     }
     //
 
@@ -1231,7 +1231,7 @@ object sentimentgui extends JFXApp {
           fileTestingConfirm
         ),
         new HBox(10,
-          new Text("Quality of classification:"),
+          new Text("Accuracy:"),
           clasifierQualityField
         )
         ,
